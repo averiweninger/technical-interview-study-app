@@ -1,6 +1,6 @@
 # Proposed relational database schema
 
-Status: design only, 2026-10-21. These are complete logical table definitions for the three-phase plan, not installed migrations or a tested database. Create tables incrementally by phase; do not provision all future tables during the MVP. Use PostgreSQL on Supabase, with Supabase-managed `auth.users` as the identity source.
+Status: future logical design, 2026-10-21; no migrations are created or applied by this update. Use PostgreSQL on Supabase with managed `auth.users`. Introduce only tables needed by the authorized step in DEVELOPMENT_ROADMAP.md: identity/progress in Step 3, curriculum/skills in Step 4, research/profiles and AI accounting in Step 5, tutor in Step 6, planning/reviews in Step 7, execution/mocks in Step 8. Table numbers are document references, not migration order.
 
 ## Definition conventions
 
@@ -11,6 +11,7 @@ Status: design only, 2026-10-21. These are complete logical table definitions fo
 - All bounded `text` values have a database length check corresponding to the bounds stated below. API schemas enforce tighter feature-specific request limits. Slugs are lowercase, unique within their stated scope, and match `^[a-z0-9]+(-[a-z0-9]+)*$`. All counters are nonnegative; all scores in `[0,1]`; positive durations/ordinals as specified. JSON fields require the JSON type stated below and a versioned runtime schema. JSON is for content/response payloads, not substitutes for relational ownership or foreign keys.
 - Persist instants as `timestamptz` (UTC); local interview/scheduled dates use `date` plus a validated IANA timezone. Use `numeric`, not floating point, for costs. Use text plus named `CHECK` constraints for enumerated states so migrations can extend them deliberately.
 - `public` is the API-exposed schema with RLS and explicit grants. `private` is not exposed through the Supabase Data API; its objects have no `anon`/`authenticated` table privileges. Sensitive RPCs are also restricted. Content is readable only when published, not merely because its parent row exists.
+- Stable curriculum identifiers: `topics.id` and `skills.id` are permanent UUID identities; their unique seeded slugs are immutable machine keys (for example `sql-joins` and `sql-inner-join`). Display titles may change. Never reuse retired IDs/slugs or derive identity from company/job names. Imports resolve those keys to existing UUIDs. Semantic splits/merges require reviewed migrations and explicit historical attribution; they cannot silently transfer mastery.
 
 ## Relationships
 
@@ -37,7 +38,23 @@ erDiagram
     REVIEW_SCHEDULES ||--o{ REVIEW_EVENTS : changes
     PROFILES ||--o{ INTERVIEW_GOALS : targets
     INTERVIEW_GOALS ||--o{ JOB_DESCRIPTIONS : contextualizes
-    JOB_DESCRIPTIONS ||--o{ JOB_TOPIC_MATCHES : maps
+    JOB_DESCRIPTIONS |o--o{ JOB_TOPIC_MATCHES : input_evidence
+    TOPICS ||--o{ TOPIC_SKILLS : covers
+    SKILLS ||--o{ TOPIC_SKILLS : describes
+    COMPANIES |o--o{ JOB_POSTINGS : contextualizes
+    JOB_DESCRIPTIONS |o--o| JOB_POSTINGS : input
+    JOB_POSTINGS |o--o{ INTERVIEW_GOALS : targets
+    INTERVIEW_GOALS ||--o{ RESEARCH_RUNS : researches
+    RESEARCH_RUNS ||--o{ RESEARCH_SOURCES : collects
+    RESEARCH_RUNS ||--o{ RESEARCH_FINDINGS : proposes
+    RESEARCH_FINDINGS ||--o{ RESEARCH_CITATIONS : supported_by
+    RESEARCH_SOURCES ||--o{ RESEARCH_CITATIONS : cites
+    INTERVIEW_GOALS ||--o{ PREPARATION_PROFILES : versions
+    RESEARCH_RUNS |o--o{ PREPARATION_PROFILES : grounds
+    PREPARATION_PROFILES ||--o{ JOB_TOPIC_MATCHES : selects
+    TOPICS ||--o{ JOB_TOPIC_MATCHES : reuses
+    SKILLS |o--o{ JOB_TOPIC_MATCHES : refines
+    PREPARATION_PROFILES |o--o{ STUDY_PLANS : informs
     ASSESSMENT_RUNS ||--o{ ASSESSMENT_RUN_ITEMS : freezes
     ASSESSMENT_RUN_ITEMS ||--o| QUESTION_ATTEMPTS : answered
     PROFILES ||--o{ TUTOR_CONVERSATIONS : owns
@@ -135,7 +152,7 @@ Fields: `id uuid PK`; `lesson_version_id uuid? FK -> lesson_versions(id)`; `ques
 
 Fields: `id uuid PK`; `user_id uuid`; `kind text CHECK IN ('lesson','practice','tutor','review','assessment')`; `topic_id uuid? FK -> topics(id)`; `started_at timestamptz DEFAULT now()`; `ended_at timestamptz?`; `active_seconds integer DEFAULT 0 CHECK >= 0`; `created_at`. `UQ(user_id, id)`; `CHECK(ended_at IS NULL OR ended_at >= started_at)`.
 
-Indexes `(user_id, started_at DESC)`, `(topic_id)`. Server bounds heartbeat increments and ignores time when inactive; time is approximate engagement, never learning evidence. Phase 1 allows only lesson/practice/tutor kinds. Sessions can be abandoned without fabricating a completed duration.
+Indexes `(user_id, started_at DESC)`, `(topic_id)`. Server bounds heartbeat increments and ignores time when inactive; time is approximate engagement, never learning evidence. Phase 1 allows lesson/practice kinds; tutor is enabled in Step 6. Sessions can be abandoned without fabricating a completed duration.
 
 ### 15. `public.question_attempts`
 
@@ -161,29 +178,29 @@ Composite owner/attempt FK. `UQ(attempt_id, attempt_revision, algorithm_version)
 
 ### 18. `public.interview_goals`
 
-Fields: `id uuid PK`; `user_id uuid`; `title text` (1-160); `career_path_id uuid? FK -> career_paths(id)`; `interview_date date?`; `timezone text` (1-100); `status text CHECK IN ('active','completed','archived') DEFAULT 'active'`; `daily_minutes integer DEFAULT 30 CHECK BETWEEN 5 AND 240`; `available_weekdays smallint[] DEFAULT '{1,2,3,4,5}'`; `created_at`; `updated_at`.
+Fields: `id uuid PK`; `user_id uuid`; `title text` (1-160); `career_path_id uuid? FK -> career_paths(id)`; `job_posting_id uuid?` (Step 5 same-owner FK); `interview_date date?`; `timezone text` (1-100); `status text CHECK IN ('active','completed','archived') DEFAULT 'active'`; `daily_minutes integer DEFAULT 30 CHECK BETWEEN 5 AND 240`; `available_weekdays smallint[] DEFAULT '{1,2,3,4,5}'`; `created_at`; `updated_at`.
 
-`UQ(user_id, id)`; partial UQ `(user_id) WHERE status='active'`. Index `(career_path_id)` and `(user_id, status, interview_date)`. Phase 1 uses title/date/timezone only; capacity fields power Phase 2. Validate unique ISO weekdays in 1..7; an empty array is allowed and yields an explicit infeasible-plan state. Past dates remain valid historical data. Changing profile timezone does not silently change the goal's date interpretation.
+`UQ(user_id, id)`; partial UQ `(user_id) WHERE status='active'`. Index `(career_path_id)`, `(user_id, status, interview_date)`, and Step 5 `(user_id, job_posting_id)`. Phase 1 uses title/date/timezone only; capacity fields power Step 7. Validate unique ISO weekdays in 1..7; empty availability yields an infeasible-plan state. Past dates remain historical data. A timezone change does not silently reinterpret the date. A changed job/input makes earlier research ineligible for new activation until reviewed; historical profile/plan versions retain provenance.
 
-## Phase 1: tutoring and cost control
+## Phase 2: tutoring and provider cost control (Steps 5–6)
 
 ### 19. `public.tutor_conversations`
 
-Fields: `id uuid PK`; `user_id uuid`; `topic_id uuid? FK -> topics(id)`; `lesson_version_id uuid? FK -> lesson_versions(id)`; `practice_attempt_id uuid?`; `assessment_run_id uuid?` (Phase 3 same-owner FK); `kind text CHECK IN ('tutor','interview_simulation') DEFAULT 'tutor'`; `title text` (1-160); `explanation_level text CHECK IN ('beginner','intermediate','advanced') DEFAULT 'beginner'`; `created_at`; `updated_at`.
+Fields: `id uuid PK`; `user_id uuid`; `topic_id uuid? FK -> topics(id)`; `lesson_version_id uuid? FK -> lesson_versions(id)`; `preparation_profile_id uuid?` (same-owner FK); `practice_attempt_id uuid?`; `assessment_run_id uuid?` (Phase 3 same-owner FK); `kind text CHECK IN ('tutor','interview_simulation') DEFAULT 'tutor'`; `title text` (1-160); `explanation_level text CHECK IN ('beginner','intermediate','advanced') DEFAULT 'beginner'`; `created_at`; `updated_at`.
 
-`UQ(user_id, id)`; composite owner/practice-attempt FK. Index `(user_id, updated_at DESC, id)`, `(topic_id)`, `(lesson_version_id)`, `(user_id, practice_attempt_id)`, and owner/assessment FK when added. Phase 1 supports only tutor kind. A trusted validation ensures lesson/attempt context matches the selected topic where present and that the learner may access that version. Attempt-bound help marks assistance before calling the provider; protected assessment items cannot open an unrestricted tutor context. Learners may read/delete their own conversations through validated paths; generation ownership and all message writes stay server-controlled.
+`UQ(user_id, id)`; composite owner/practice-attempt and owner/preparation-profile FKs. Index `(user_id, updated_at DESC, id)`, `(topic_id)`, `(lesson_version_id)`, `(user_id, preparation_profile_id)`, `(user_id, practice_attempt_id)`, and owner/assessment FK when added. Step 6 supports only tutor kind. Validate topic/lesson/attempt consistency, version access, and confirmed research context. Attempt-bound help marks assistance before generation; protected assessments cannot open unrestricted tutor context. Reads/deletion use validated paths; message writes stay server-controlled.
 
 ### 20. `public.tutor_messages`
 
-Fields: `id uuid PK`; `user_id uuid`; `conversation_id uuid`; `sequence integer CHECK > 0`; `role text CHECK IN ('user','assistant')`; `content text` (at most 32000); `status text CHECK IN ('pending','complete','interrupted','refused','failed')`; `client_turn_key uuid?`; `reply_to_message_id uuid?`; `ai_request_id uuid?`; `source_references jsonb DEFAULT '[]'` (array of authorized lesson/topic refs); `created_at`.
+Fields: `id uuid PK`; `user_id uuid`; `conversation_id uuid`; `sequence integer CHECK > 0`; `role text CHECK IN ('user','assistant')`; `content text` (at most 32000); `status text CHECK IN ('pending','complete','interrupted','refused','failed')`; `client_turn_key uuid?`; `reply_to_message_id uuid?`; `ai_request_id uuid?`; `source_references jsonb DEFAULT '[]'` (array of authorized curriculum and profile/finding/citation refs); `created_at`.
 
 Composite owner/conversation FK `ON DELETE CASCADE`; `UQ(user_id, id)`; `UQ(conversation_id, id)`; `UQ(conversation_id, sequence)`; partial UQ `(conversation_id, client_turn_key) WHERE client_turn_key IS NOT NULL`; partial UQ `(ai_request_id) WHERE ai_request_id IS NOT NULL`. Self composite FK `(conversation_id, reply_to_message_id) -> tutor_messages(conversation_id, id)` ensures replies remain in conversation; `ON DELETE CASCADE`. `ai_request_id -> private.ai_requests(id) ON DELETE SET NULL` once table exists. Validate same owner in trusted insert. Index `(user_id, conversation_id, sequence)`, `(conversation_id, reply_to_message_id)`.
 
-User turns and final assistant text are persisted server-side. Empty assistant content is allowed while pending or failed; a complete turn must have content. Internal system/developer prompts are not stored in this exposed table. Interrupted responses are labeled and never passed off as complete. Message size in storage allows accumulated assistant text; the Phase 1 request limit for a new user message is 2,000 characters.
+User turns and final assistant text are persisted server-side. Empty assistant content is allowed while pending or failed; complete turns require content. Internal prompts stay private; interrupted responses remain labeled. Research `source_references` identify authorized profile/finding/citation IDs and preserve evidence labels/dates; validate against the bound profile before persistence/disclosure. The proposed initial request limit is 2,000 characters per new message.
 
 ### 21. `private.ai_requests`
 
-Fields: `id uuid PK`; `user_id uuid`; `capability text CHECK IN ('tutor','question_draft','job_analysis','plan_explanation','interview_feedback')`; `idempotency_key uuid`; `input_hash text` (64); `model text` (1-160); `prompt_version text` (1-100); `status text CHECK IN ('reserved','running','succeeded','failed','cancelled','usage_unknown')`; `provider_request_ids jsonb DEFAULT '[]'` (array, capped at the configured attempt limit); `provider_attempt_count smallint DEFAULT 0 CHECK BETWEEN 0 AND 2`; `input_tokens integer? CHECK >= 0`; `output_tokens integer? CHECK >= 0`; `reserved_cost_usd numeric(14,8) CHECK >= 0`; `actual_cost_usd numeric(14,8)? CHECK >= 0`; `rate_snapshot jsonb` (object: prices, billing categories, effective version); `error_code text?` (at most 100); `lease_expires_at timestamptz?`; `started_at timestamptz?`; `finished_at timestamptz?`; `created_at`.
+Fields: `id uuid PK`; `user_id uuid`; `capability text CHECK IN ('tutor','question_draft','job_analysis','interview_research','plan_explanation','interview_feedback')`; `idempotency_key uuid`; `input_hash text` (64); `model text` (1-160); `prompt_version text` (1-100); `status text CHECK IN ('reserved','running','succeeded','failed','cancelled','usage_unknown')`; `provider_request_ids jsonb DEFAULT '[]'` (array, capped at the configured attempt limit); `provider_attempt_count smallint DEFAULT 0 CHECK BETWEEN 0 AND 2`; `input_tokens integer? CHECK >= 0`; `output_tokens integer? CHECK >= 0`; `reserved_cost_usd numeric(14,8) CHECK >= 0`; `actual_cost_usd numeric(14,8)? CHECK >= 0`; `rate_snapshot jsonb` (object: prices, billing categories, effective version); `error_code text?` (at most 100); `lease_expires_at timestamptz?`; `started_at timestamptz?`; `finished_at timestamptz?`; `created_at`.
 
 `UQ(user_id, id)`; `UQ(user_id, capability, idempotency_key)`. Index `(user_id, created_at DESC)`, `(status, lease_expires_at)`, `(capability, created_at)`. Counters/costs include any bounded provider retry; the reservation must cover the maximum allowed attempts. This ledger contains metadata, not full prompts. Authenticated users receive only safe quota summaries. Unknown usage retains reservation until reconciled. Owned cascading deletion is coordinated with budget reconciliation so deleting an account cannot release incurred spend or corrupt shared global totals.
 
@@ -209,15 +226,19 @@ Fields: `id uuid PK`; `user_id uuid`; `interview_goal_id uuid?`; `title text?` (
 
 ### 25. `public.job_topic_matches`
 
-Fields: `user_id uuid`; `job_description_id uuid`; `topic_id uuid FK -> topics(id)`; `analysis_request_id uuid? FK -> private.ai_requests(id) ON DELETE SET NULL`; `relevance numeric(4,3) CHECK BETWEEN 0 AND 1`; `confidence numeric(4,3) CHECK BETWEEN 0 AND 1`; `evidence_excerpt text` (1-1000); `user_decision text CHECK IN ('unreviewed','accepted','rejected') DEFAULT 'unreviewed'`; `created_at`; `updated_at`. `PK(job_description_id, topic_id)`; composite owner/job FK `ON DELETE CASCADE`.
+Step 5 evolves the earlier description-only mapping into this single canonical profile mapping table; do not add a parallel mapping store.
 
-Indexes `(user_id, job_description_id)`, `(topic_id)`, `(analysis_request_id)`. Validate excerpt occurs in the source; confidence is a model's uncalibrated self-estimate, not a factual certainty. Only confirmed accepted mappings influence job relevance. Learners can change the decision, not forge AI provenance or another owner's matches.
+Fields: `id uuid PK`; `user_id uuid`; `preparation_profile_id uuid`; `topic_id uuid FK -> topics(id)`; `skill_id uuid? FK -> skills(id)`; `finding_id uuid?`; `job_description_id uuid?`; `origin text CHECK IN ('job_description','research','manual')`; `relevance numeric(4,3) CHECK BETWEEN 0 AND 1`; `evidence_excerpt text?` (1-1000 when present); `reason text` (1-2000); `user_decision text CHECK IN ('unreviewed','accepted','rejected') DEFAULT 'unreviewed'`; `created_at`; `updated_at`.
+
+Composite owner/profile FK `ON DELETE CASCADE`, owner/finding FK, and owner/description FK. Optional `FK(topic_id, skill_id) -> topic_skills(topic_id, skill_id)` prevents mapping a skill to an unrelated topic. Partial UQ `(preparation_profile_id, topic_id) WHERE skill_id IS NULL`; partial UQ `(preparation_profile_id, topic_id, skill_id) WHERE skill_id IS NOT NULL`. Index owner/profile, owner/finding, owner/description, and `(topic_id, skill_id)`. Research origin requires finding only; description origin requires description and supporting excerpt only; manual origin has neither evidence FK. Validate the finding belongs to the profile's run, or description to its job, and excerpt to retained source text. Unsupported labels stay in the profile's coverage gaps, not fabricated IDs.
+
+Only accepted mappings in an activated profile affect relevance. Rows freeze on activation; changing decisions clones a draft profile version. Deduplicate to topics for planning (maximum accepted relevance per topic), with skills refining explanations rather than duplicating assignments or mastery.
 
 ### 26. `public.study_plans`
 
-Fields: `id uuid PK`; `user_id uuid`; `interview_goal_id uuid`; `version integer CHECK > 0`; `status text CHECK IN ('active','superseded','completed') DEFAULT 'active'`; `algorithm_version text` (1-100); `input_snapshot jsonb` (object: capacity, goal date/timezone, topic weights/evidence, no raw job text); `input_hash text` (64); `idempotency_key uuid`; `unallocated_minutes integer DEFAULT 0 CHECK >= 0`; `created_at`.
+Fields: `id uuid PK`; `user_id uuid`; `interview_goal_id uuid`; `preparation_profile_id uuid?`; `version integer CHECK > 0`; `status text CHECK IN ('active','superseded','completed') DEFAULT 'active'`; `algorithm_version text` (1-100); `input_snapshot jsonb` (object: capacity, goal date/timezone, confirmed topic weights, evidence labels/freshness and profile version, no raw job/research text); `input_hash text` (64); `idempotency_key uuid`; `unallocated_minutes integer DEFAULT 0 CHECK >= 0`; `created_at`.
 
-`UQ(user_id, id)`; `UQ(interview_goal_id, version)`; `UQ(user_id, idempotency_key)`; composite owner/goal FK. Partial UQ `(interview_goal_id) WHERE status='active'`; index `(user_id, created_at DESC)`. Rebuild locks the goal, checks idempotency/input hash, versions the plan, and preserves completed work as described in the architecture. No LLM decides final plan feasibility.
+`UQ(user_id, id)`; `UQ(interview_goal_id, version)`; `UQ(user_id, idempotency_key)`; composite owner/goal FK and optional `FK(user_id, interview_goal_id, preparation_profile_id) -> preparation_profiles(user_id, interview_goal_id, id)`. Partial UQ `(interview_goal_id) WHERE status='active'`; indexes `(user_id, created_at DESC)` and owner/goal/profile. Rebuild locks the goal, verifies profile confirmation/current input, checks idempotency, versions the plan, and preserves completed work. No LLM decides feasibility. Plans may omit a profile and use career-path relevance.
 
 ### 27. `public.study_plan_items`
 
@@ -291,6 +312,66 @@ Fields: `id uuid PK`; `execution_job_id uuid FK -> execution_jobs(id) ON DELETE 
 
 `UQ(provider, provider_event_id)`; index `(execution_job_id, received_at)`. Signature/timestamp verification occurs before acceptance. Reject a repeated event ID with a changed hash. Do not store arbitrary full payloads or hidden output in logs. Callback transaction locks the job, validates provider-job/version linkage, updates state, and dispatches trusted grading exactly once; late terminal callbacks cannot resurrect cancelled/deleted work.
 
+## Shared skills and interview research (future Steps 4–5)
+
+### 38. `public.skills`
+
+Fields: `id uuid PK`; `slug text UQ` (stable machine key); `title text` (1-160); `description text` (1-2000); `status text CHECK IN ('draft','published','retired') DEFAULT 'draft'`; `created_at`; `updated_at`. Index `(status, slug)`. Trusted catalog writes only; retirement preserves references. A skill describes an ability such as `sql-inner-join`, while a topic groups curriculum such as `sql-joins`. No independent skill mastery is inferred without an explicit future grading signal.
+
+### 39. `public.topic_skills`
+
+Fields: `topic_id uuid FK -> topics(id)`; `skill_id uuid FK -> skills(id)`; `created_at`. `PK(topic_id, skill_id)`; reverse index `(skill_id, topic_id)`. Published mappings require published endpoints. Published relationships used in historical profiles are preserved; add reviewed relationships rather than deleting history. Existing `career_path_topics`, lesson/question versions, attempts, `user_topic_mastery`, and `mastery_events` remain the shared learning model.
+
+### 40. `public.companies`
+
+Fields: `id uuid PK`; `slug text UQ`; `name text` (1-160); `verified_domain text?` (1-253, hostname only); `domain_verified_at timestamptz?`; `is_active boolean DEFAULT true`; `created_at`; `updated_at`. Require verified domain and verification timestamp together. Index `(is_active, name)`; partial UQ on non-null verified domain. Trusted catalog maintenance verifies company identity/domain; learner input cannot verify a company. Unmatched names remain on the owned job posting until resolved. This shared table contains no learner job text, goals, or research.
+
+### 41. `public.job_postings`
+
+Fields: `id uuid PK`; `user_id uuid`; `company_id uuid? FK -> companies(id)`; `company_name_input text` (1-160); `job_title text` (1-200); `job_description_id uuid?`; `source_url text?` (1-2000); `input_hash text` (64); `processing_consented_at timestamptz?`; `created_at`.
+
+`UQ(user_id, id)`; composite owner/description FK; `CHECK(job_description_id IS NOT NULL OR source_url IS NOT NULL)`; partial UQ `(user_id, job_description_id) WHERE job_description_id IS NOT NULL` gives each description one posting snapshot. Index `(user_id, created_at DESC)`, `(company_id)`, and owner/description. URLs satisfy ARCHITECTURE.md retrieval controls, never become direct fetch instructions. Consent is required before provider processing. Once referenced by a research run, input fields/hash are immutable; edits create another posting snapshot and update the owned goal's pointer. The earlier `job_descriptions` table remains the text/consent/expiry store, not a second copy of posting text.
+
+### 42. `private.research_runs`
+
+Fields: `id uuid PK`; `user_id uuid`; `interview_goal_id uuid`; `job_posting_id uuid`; `idempotency_key uuid`; `input_hash text` (64); `search_provider text` (1-100); `workflow_version text` (1-100); `state text CHECK IN ('running','complete','partial','failed','cancelled')`; `search_call_count integer DEFAULT 0 CHECK >= 0`; `source_limit integer CHECK > 0`; `reserved_search_cost_usd numeric(14,8) CHECK >= 0`; `actual_search_cost_usd numeric(14,8)? CHECK >= 0`; `usage_status text CHECK IN ('reserved','settled','unknown')`; `rate_snapshot jsonb` (object); `synthesis_request_id uuid? FK -> private.ai_requests(id) ON DELETE SET NULL`; `error_code text?` (1-100); `started_at timestamptz`; `completed_at timestamptz?`; `expires_at timestamptz`; `created_at`.
+
+`UQ(user_id, id)`; `UQ(user_id, interview_goal_id, job_posting_id, id)` for profile lineage; `UQ(user_id, idempotency_key)`; composite owner/goal, owner/posting, and owner/synthesis-request FKs. The optional synthesis request must belong to the run's owner; clear its reference during reconciled AI-ledger expiry. Index `(user_id, created_at DESC)`, owner/goal, owner/posting, owner/synthesis-request, `(state, usage_status)`, `(expires_at)`, and `(synthesis_request_id)`. Verify goal currently targets the posting on admission. Same-key/different-hash reuse conflicts; retries do not create duplicate profiles. Store only normalized bounded query metadata, not arbitrary provider payloads.
+
+This ledger also supports low-volume search budgeting: under stable user/global period locks, sum settled search cost plus outstanding reservations before admitting a run against separate configured daily/monthly search caps. Reserve bounded retries too; unknown usage remains reserved until resolved. Concurrent requests cannot bypass caps. AI synthesis uses `ai_requests` and existing AI buckets separately, not a second charge for the same call. Search pricing/limits must be configured before enablement. Expose only safe owned status DTOs, never ledger fields directly.
+
+### 43. `public.research_sources`
+
+Fields: `id uuid PK`; `user_id uuid`; `research_run_id uuid`; `url text` (1-2000, original safe URL); `canonical_url text` (1-2000); `title text` (1-500); `publisher text?` (1-200); `source_kind text CHECK IN ('official','candidate_report','other')`; `authority_status text CHECK IN ('verified','unverified','excluded')`; `retrieval_kind text CHECK IN ('snippet','page')`; `published_at timestamptz?`; `retrieved_at timestamptz`; `excerpt text` (1-4000); `excerpt_hash text` (64); `evaluation_reason text` (1-2000); `created_at`.
+
+`UQ(user_id, id)`; `UQ(user_id, research_run_id, id)`; `UQ(research_run_id, canonical_url)`; composite owner/run FK `ON DELETE CASCADE`. Index owner/run and `(research_run_id, excerpt_hash)`. Official kind requires verified company-controlled provenance; a model label or submitted URL is insufficient. Published date remains null when unknown. Excerpt hashes/domain context flag duplicate/syndicated reports; they are not counted as independent evidence. Do not store entire pages by default. Source identity/content freezes when referenced by an activated profile.
+
+### 44. `public.research_findings`
+
+Fields: `id uuid PK`; `user_id uuid`; `research_run_id uuid`; `claim_kind text CHECK IN ('job_requirement','interview_process','topic_relevance')`; `evidence_class text CHECK IN ('official','candidate_report','ai_prediction')`; `statement text` (1-2000); `context text?` (1-1000, role/location/date applicability); `support_status text CHECK IN ('supported','limited','conflicting')`; `uncertainty_note text?` (1-2000); `created_at`.
+
+`UQ(user_id, id)`; `UQ(user_id, research_run_id, id)`; composite owner/run FK `ON DELETE CASCADE`; index `(user_id, research_run_id, evidence_class)`. No finding writes grades or curriculum. Before profile activation, every non-prediction must have a usable supporting citation of the corresponding source kind; uncited predictions require an uncertainty note explaining absent direct evidence. Predictions retain their class even if premises cite official sources. A job requirement is not automatically an interview-process claim. Conflicting/context-limited findings remain labeled; no uncalibrated probability is presented as certainty. Findings freeze with the activated profile.
+
+### 45. `public.research_citations`
+
+Fields: `user_id uuid`; `research_run_id uuid`; `finding_id uuid`; `source_id uuid`; `supporting_excerpt text` (1-1000); `created_at`. `PK(finding_id, source_id)`; composite `FK(user_id, research_run_id, finding_id) -> research_findings(user_id, research_run_id, id) ON DELETE CASCADE`; equivalent same-owner/same-run source FK. Index owner/run and `(user_id, research_run_id, source_id)`.
+
+Validate the excerpt against the retained source and distinguish direct support from premises for a prediction through the finding's evidence class. A citation cannot point to another run/user, an invented source, or an excluded result. Citations alone do not certify truth; the PRD evidence policy governs presentation.
+
+### 46. `public.preparation_profiles`
+
+Fields: `id uuid PK`; `user_id uuid`; `interview_goal_id uuid`; `job_posting_id uuid`; `research_run_id uuid?`; `version integer CHECK > 0`; `input_hash text` (64); `status text CHECK IN ('draft','active','superseded') DEFAULT 'draft'`; `coverage_gaps jsonb DEFAULT '[]'` (bounded array of unsupported skill labels/reasons, not invented catalog IDs); `confirmation_key uuid?`; `confirmation_hash text?` (64); `confirmed_at timestamptz?`; `created_at`.
+
+`UQ(user_id, id)`; `UQ(user_id, interview_goal_id, id)`; `UQ(interview_goal_id, version)`; partial UQ `(interview_goal_id) WHERE status='active'`; partial UQ `(user_id, confirmation_key) WHERE confirmation_key IS NOT NULL`; owner/goal and owner/posting FKs; optional `FK(user_id, interview_goal_id, job_posting_id, research_run_id) -> research_runs(user_id, interview_goal_id, job_posting_id, id)` preserves lineage. Index owner/goal, owner/posting, and owner/goal/posting/run. No run is required for a manually confirmed description-based fallback. Active/superseded profiles require confirmation key/hash/timestamp; the canonical confirmation hash includes the profile ID, input hash, and mapping decisions.
+
+Profile content lives in referenced job inputs, run findings/citations, and `job_topic_matches`; do not copy lessons or full research summaries into another schema. Activation locks the goal, verifies current input hash and owned lineage, validates citation/mapping rules, retires the prior active version, and confirms the draft atomically. Double confirmation is idempotent; a changed draft payload conflicts. Active content and mapping decisions are immutable; refresh/edit creates a draft version. Existing plans retain their selected profile until explicit replanning.
+
+### Research retention and deletion
+
+Proposed default: expire job-description text and run evidence after 90 days unless the learner explicitly retains them; show a separate configurable research-freshness warning before expiry. Date thresholds are product policies, not guarantees of accuracy. A run's `expires_at` governs its sources, findings, citations, and dependent profile eligibility. Snippets/excerpts and job inputs remain private to their owner even though their source pages are public.
+
+On job/profile/research deletion or expiry, cancel/reconcile in-flight calls, clear dependent plan/profile links and research-derived snapshot fields, and remove or regenerate affected plans without private research. Remove/redact derived tutor messages containing deleted job/research excerpts and references so deleted text is not retained in chat. Then delete mappings/citations, profile versions, findings/sources/runs, posting/description in dependency order. Keep only non-content accounting required by the documented provider/budget policy; backups follow the existing tombstone policy. Shared company/catalog records and independent mastery survive a job deletion; account deletion removes the complete owned graph.
+
 ## Access, grants, and integrity matrix
 
 Supabase RLS is mandatory for every public table, even those intended to be reached only through the app. Default deny: enabling RLS does not replace revoking inappropriate privileges. Policies must be tested with actual `anon` and `authenticated` roles. Supabase privileged secret/service roles can bypass RLS; see [official RLS guidance](https://supabase.com/docs/guides/database/postgres/row-level-security). Never expose those keys to the browser.
@@ -299,12 +380,14 @@ Supabase RLS is mandatory for every public table, even those intended to be reac
 | --- | --- | --- | --- |
 | Profiles | Own row | Display name/timezone only, column-restricted | Signup, onboarding completion, deletion |
 | Career paths/topic tree/mappings | Active/published catalog only | None | Validated seed/import publication |
+| Shared skills/topic skills/company catalog | Published skills/mappings and trusted active company metadata | None | Reviewed catalog maintenance; users cannot verify domains |
 | Lessons/question versions | Published safe practice content only; historical/assessment-only versions via authorized use case | None | Versioned draft/review/publication |
 | Selected paths, goals, lesson progress | Own rows | Prefer validated actions; any direct grants limited to harmless fields with ownership checks | Atomic primary-path change, timezone/date validation |
 | Attempts, assessment runs/items | Gated safe DTO/RPC only; raw table SELECT revoked | None | Assignment, autosave, grading, release policy |
 | Mastery/events/sessions | Own safe rows | None | Grading transaction, bounded session heartbeat |
 | Conversations/messages | Own safe rows | None | Conversation lifecycle and generation workflow |
-| Job descriptions/matches | Own rows | None | Consent, analysis; user corrections via action |
+| Job postings/descriptions, profiles/matches, research sources/findings/citations | Safe own rows/DTOs only | None | Consent, bounded research, validated evidence, draft decisions and atomic confirmation |
+| Private research runs | Safe own status DTO only | None | Admission, budgets, provider reconciliation and lifecycle |
 | Plans/reviews | Own rows | None | Validated plan generation and review grading |
 | Execution jobs | Safe own DTO/RPC only; raw table SELECT revoked | None | Dispatch, provider callback, expiry |
 | All `private` tables | None | None | Narrow server roles/functions only |
@@ -323,11 +406,12 @@ Required atomic boundaries:
 4. AI admission: request ledger plus user/global bucket reservations and concurrency check. Reconciliation updates every reservation and bucket once.
 5. Phase 2 review: attempt grading plus schedule/event transition; plan rebuild: lock goal, supersede/create plan, allocate items without exceeding capacity.
 6. Phase 3 assessment: assignment/start/deadline freeze; finalization and score release. Runner callback: event deduplication, job terminal state, and at-most-once attempt grading.
+7. Step 5 research: consent/input/ownership validation plus idempotent budget admission; stage persistence; profile confirmation/citation checks under a goal lock. Refresh never replaces the active profile or plan silently.
 
 All FK access paths have indexes named in the definitions or supplied by PK/UQ left prefixes. Add missing composite owner-reference indexes in generated migrations if query plans require them; verify every FK's index coverage during migration review. History uses `(user_id, created_at DESC, id)` cursors, not unbounded offset scans. Initial dashboard aggregates indexed owned rows; add views/materialized summaries only after measurement. Do not add an index to every JSON field.
 
 All owned tables cascade with account deletion. Some content/provenance references restrict arbitrary content deletion; use retirement. Owner-tree cross references may use RESTRICT during normal operations, so the deletion workflow explicitly removes dependent rows first (callback events/jobs, attempts/events/reviews/plans, messages/conversations/AI reservations, then profile/auth) inside trusted orchestration. Do not rely on incidental cascade order where an explicit RESTRICT FK exists. Failures leave a resumable deletion request/tombstone in the operational control plane, with no raw learner content in the tombstone. Drain/reconcile in-flight AI usage and cancel external work before removing identity. Review-author IDs may become null while non-sensitive content review evidence remains.
 
-Migration order: profiles/catalog -> curriculum versions/private keys/reviews -> goals/sessions/attempts/mastery -> conversations and AI ledger/budgets -> add generation/message provenance FKs. Phase 2 introduces job/plan/review tables and assessments, then deferred cross-reference FKs. Phase 3 introduces exercise configs/jobs/callbacks and simulation links. Never enable unsupported question/run kinds merely because the schema reserves them.
+Migration order follows the roadmap: Step 3 profiles/minimal catalog/goals/sessions/attempts/mastery and enough reviewed seed content for one safe persisted slice; Step 4 complete catalog/skills/topic skills/versioned curriculum and publication checks. Step 5 AI ledger/budgets, company/job inputs, research runs, sources/findings/citations, profiles/matches, then deferred goal/posting links. Step 6 conversations/messages and profile provenance. Step 7 assessments for diagnostics plus plans/reviews; Step 8 exercise configs/jobs/callbacks and mocks/simulations. Generate types after each reviewed migration; never provision the entire future schema or enable unsupported kinds early.
 
 Required migration verification: clean local database reset and seeded content validation; all FKs/CHECK/UQ failures; parent/prerequisite cycle tests; two-user RLS/direct-API/RPC tests; pre-release key/feedback visibility; same-request/different-payload replay; concurrent attempt and AI-budget admission; deletion of a fully populated synthetic account; timezone/DST boundaries; reviewed-version immutability; and rebuild of mastery from authoritative attempts/events. These checks are planned, not run in this documentation task.

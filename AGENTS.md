@@ -8,7 +8,7 @@ Dependency installation was blocked by declined registry access, and the offline
 
 **Wait for the user's approval before beginning Phase 1 implementation.** This is the user's explicit instruction for the planning handoff, not a requirement to ask again on every task. Once the user authorizes Phase 1 or a particular action, proceed within that authorization without redundant approval questions. Later explicit user instructions take precedence over this file. Do not assume authorization to provision paid services, deploy to production, or start later phases from approval of a code change alone.
 
-Before changing anything, read the applicable repository instructions and inspect `git status`, the actual files/dependencies, and the task context. Preserve unrelated user changes. The initial empty-repository observation is historical; future sessions must inspect the current state instead of assuming it is still empty.
+Before changing anything, read the applicable repository instructions, inspect `git status`, and review the task context. Inspect only the files/dependencies needed for the authorized work. Documentation-only tasks normally require no source inspection or application tests. Preserve unrelated user changes; the initial empty-repository observation is historical.
 
 Read the relevant planning documents:
 
@@ -23,9 +23,26 @@ These documents are proposed designs. If implementation reveals an issue, explai
 
 Use Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Supabase PostgreSQL/Auth, server-side OpenAI API, Vercel, and GitHub. Add Monaco and a managed isolated Python/SQL runner only in Phase 3. Choose supported versions at scaffolding time, pin the runtime/package manager and lockfile, and check current official documentation for version-sensitive APIs. Do not assume any tool or dependency exists merely because it appears in a plan.
 
-Phase 1 is auth, path selection/optional interview date, reviewed topic library and lessons, reviewed single-choice quizzes, text tutor, basic performance-based progress/history/dashboard, settings, and deletion. Minimum content is eight topics/eight lessons/forty questions and six selectable paths with shared foundational coverage. Diagnostics, study plans, job analysis, adaptive difficulty, and spaced repetition belong to Phase 2. Executable practice, timed mocks, simulations, and advanced reports belong to Phase 3. Do not implement the full long-term schema or install future-only tooling prematurely.
+Follow the Step 3–9 sequence in DEVELOPMENT_ROADMAP.md. Phase 1 (Steps 3–4) is auth, persistent progress, path selection/optional interview date, reviewed library/lessons/quizzes, settings, and deletion. Minimum content remains eight topics/eight lessons/forty questions and six selectable paths with shared foundations. Phase 2 (Steps 5–7) adds interview research/preparation profiles, grounded tutor, diagnostics, adaptive plans, and reviews. Phase 3 (Steps 8–9) adds isolated execution/mocks and final release verification. Testing accompanies every implemented step; Step 9 is release hardening. These are plans, not authorization to implement or provision services.
 
 Keep one modular application and a deterministic learning orchestrator. Tutor/Practice/Assessment/Planner are capability boundaries, not a mandate for autonomous agents, separate deployments, or an agent framework. Use ordinary logic for grading, eligibility, budgets, scheduling, selection, and access control. Use AI for bounded explanations and validated drafts/extractions. Avoid speculative abstractions and new infrastructure without evidence.
+
+## Permanent development rules
+
+- Write simple, readable, well-commented code; explain important functions and non-obvious logic without narrating every line.
+- Reuse existing components and shared curriculum data. Career paths and preparation profiles reference stable topic/skill IDs; never duplicate lessons for a company or job.
+- Avoid unnecessary dependencies, abstractions, services, and state-management layers. Follow the documented architecture and explain any necessary correction.
+- Preserve functioning features and unrelated user work. Make minimal, targeted changes; do not modify unrelated files.
+- Keep Codex responses concise to conserve tokens. Read relevant document sections and affected files; avoid repeatedly analyzing the entire repository or performing broad scans without need.
+- Do not automatically commit or push. Feature planning does not authorize implementation, external account setup, paid calls, or deployment.
+
+## Interview research rules
+
+- Preserve the Learning, Interview Research, and Personalization boundaries in ARCHITECTURE.md inside the same application. SQL and typed use cases are sufficient initially.
+- Use a replaceable server-only web-search provider adapter. Treat company/job inputs, URLs, snippets, pages, and generated research as untrusted. Follow the bounded retrieval and URL controls in ARCHITECTURE.md; never grant a model arbitrary browsing or database tools.
+- Apply the PRD evidence policy: distinguish official information, candidate-reported experiences, and AI predictions. Retain source URLs, research/retrieval dates, and claim-level citations. A prediction is never promoted to fact by model agreement or repetition.
+- Keep user jobs, goals, research, mappings, and plans owner-scoped with RLS and composite ownership constraints. Shared company records contain trusted catalog metadata only; no automatic public sharing of personal research.
+- Only confirmed profile mappings may affect job relevance. Research cannot publish curriculum, raise mastery, disclose protected answers, or silently replace an active plan. Missing evidence falls back to career-path preparation.
 
 ## Project structure and coding conventions
 
@@ -56,7 +73,7 @@ Keep one modular application and a deterministic learning orchestrator. Tutor/Pr
 
 - Call OpenAI only server-side through the configured adapter. Check current official OpenAI documentation for relevant API/model behavior; choose model IDs/prices using actual account access and evaluations, not presumed names or stale prices.
 - Enforce per-user calls/concurrency/input-output caps and a configured global monthly budget before provider calls. Atomically reserve a conservative maximum across user/global buckets, including bounded retries; reconcile once using usage metadata. Retain unknown-usage reservations until resolved. Never assume a provider alert is an application hard cap.
-- Ground the tutor in authorized published content and bounded owned history. Treat user text, job descriptions, retrieved text, generated Markdown, and submitted code as untrusted. Models cannot change authorization, scores, budgets, or schedules. Do not supply hidden assessment keys or credentials.
+- Ground the tutor in authorized published curriculum, bounded owned history, and, when available, the learner's confirmed research profile with its evidence labels and citations. Treat all external content as untrusted. Models cannot change authorization, scores, budgets, or schedules. Do not supply hidden assessment keys or credentials.
 - Use schema-constrained outputs for structured AI tasks and validate domain semantics. Handle refusals, incomplete output, provider errors, and interrupted streams explicitly. AI availability must not block lessons or deterministic quizzes.
 - Generated questions remain drafts until schema/key/explanation/reference checks and human/developer review pass. A second model's agreement is not proof. Maintain curated evaluations for factuality, hints, injection, data isolation, and cost/latency; rerun relevant cases on model/prompt changes.
 - Never execute untrusted Python/SQL in Next.js, Vercel app functions, the production database, Node VM, local shell, or application subprocesses. Monaco is only an editor. Phase 3 uses disposable managed isolation in a separate boundary with no production credentials/network path, strict resources, a trusted grading harness, and signed/replay-safe outcomes.
