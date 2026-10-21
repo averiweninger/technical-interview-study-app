@@ -1,0 +1,84 @@
+# Instructions for future Codex sessions
+
+## Current project state and authorization
+
+This repository is in the planning stage. At initial inspection on 2026-10-21 it contained only Git metadata, with no source files, dependency manifest, test suite, integrations, or commits. The initial task adds five planning documents only. Do not report planned functionality as implemented.
+
+**Wait for the user's approval before beginning Phase 1 implementation.** This is the user's explicit instruction for the planning handoff, not a requirement to ask again on every task. Once the user authorizes Phase 1 or a particular action, proceed within that authorization without redundant approval questions. Later explicit user instructions take precedence over this file. Do not assume authorization to provision paid services, deploy to production, or start later phases from approval of a code change alone.
+
+Before changing anything, read the applicable repository instructions and inspect `git status`, the actual files/dependencies, and the task context. Preserve unrelated user changes. The initial empty-repository observation is historical; future sessions must inspect the current state instead of assuming it is still empty.
+
+Read the relevant planning documents:
+
+- [PRD.md](PRD.md): product requirements, acceptance IDs, exact MVP scope, evidence policy.
+- [ARCHITECTURE.md](ARCHITECTURE.md): stack, folder structure, use cases/APIs, AI and execution boundaries.
+- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md): table definitions, constraints, ownership, grants/RLS, transaction requirements.
+- [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md): ordered tasks, phase gates, risks and external dependencies.
+
+These documents are proposed designs. If implementation reveals an issue, explain the tradeoff, choose the simplest reliable correction within the authorized scope, and update the affected documents. Do not let an obsolete design silently govern production behavior.
+
+## Stack and scope
+
+Use Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Supabase PostgreSQL/Auth, server-side OpenAI API, Vercel, and GitHub. Add Monaco and a managed isolated Python/SQL runner only in Phase 3. Choose supported versions at scaffolding time, pin the runtime/package manager and lockfile, and check current official documentation for version-sensitive APIs. Do not assume any tool or dependency exists merely because it appears in a plan.
+
+Phase 1 is auth, path selection/optional interview date, reviewed topic library and lessons, reviewed single-choice quizzes, text tutor, basic performance-based progress/history/dashboard, settings, and deletion. Minimum content is eight topics/eight lessons/forty questions and six selectable paths with shared foundational coverage. Diagnostics, study plans, job analysis, adaptive difficulty, and spaced repetition belong to Phase 2. Executable practice, timed mocks, simulations, and advanced reports belong to Phase 3. Do not implement the full long-term schema or install future-only tooling prematurely.
+
+Keep one modular application and a deterministic learning orchestrator. Tutor/Practice/Assessment/Planner are capability boundaries, not a mandate for autonomous agents, separate deployments, or an agent framework. Use ordinary logic for grading, eligibility, budgets, scheduling, selection, and access control. Use AI for bounded explanations and validated drafts/extractions. Avoid speculative abstractions and new infrastructure without evidence.
+
+## Project structure and coding conventions
+
+- Follow the recommended tree in ARCHITECTURE.md: thin `src/app` routes; reusable `src/components`; feature modules in `src/features`; sensitive use cases/DAL/learning/AI code in `src/server`; Supabase migrations and database tests in `supabase`; reviewed content in `content`; meaningful tests in `tests`.
+- Default to Server Components. Add `use client` only at interactive boundaries. Put `server-only` guards on keys, private answer access, privileged data clients, and provider calls; never import those modules into a client graph.
+- Use strict TypeScript. Prefer typed inputs/outputs and discriminated states over booleans that permit contradictory combinations. Validate untrusted runtime inputs with Zod or the chosen compatible schema library; do not use `any` to bypass boundary checks.
+- Use `PascalCase` React components/types, `camelCase` functions/variables, consistent kebab-case module filenames where the framework does not impose a name, and SQL `snake_case` identifiers. Keep naming descriptive; comments explain reasons or invariants.
+- Keep business rules in pure typed functions where practical. Use feature use cases to coordinate auth, data, rules, and AI. Centralize safe DTOs, provider adapters, and error codes instead of scattering direct SDK/database calls through UI components.
+- Prefer one package manager, the checked-in lockfile, native platform features, and existing shared primitives. Add dependencies only for a real current requirement. Never maintain parallel lockfiles.
+- Use Tailwind design tokens and accessible shadcn primitives consistently. Build loading/empty/error/success states alongside the feature. Validate forms on the server even when client validation exists. Do not put infrastructure details or raw provider errors into learner flows.
+- Store instants in UTC and preserve the user's validated IANA timezone for local schedules. Distinguish a local interview date from a timestamp. Use fixed-precision money in persistence.
+- Keep the platform employer-neutral and expandable through curriculum data. Do not introduce AT&T-specific copy, paths, scoring, or schemas.
+
+## Database and security invariants
+
+- Make schema changes through reviewed SQL migrations; generate database types after schema changes. Do not hand-edit generated types or make undocumented dashboard-only schema edits.
+- Enable RLS and explicit grants on every exposed table. Test two users plus anonymous access. Enforce owner relationships with composite FKs where needed. Owner visibility does not authorize a learner to edit grades, assistance flags, publication, or quotas.
+- Keep keys, hints before permitted release, hidden tests, reviews, and cost ledgers in a non-exposed private schema. Return explicit safe DTOs. Raw attempt/job/assessment reads must not bypass feedback-release policies.
+- Verify identity and ownership inside every handler/action/RPC boundary. Route protection and UI checks are insufficient. Use the current supported Supabase SSR verification flow, allowlisted callbacks, and same-origin/CSRF protection.
+- Never expose secrets through `NEXT_PUBLIC_`, client code, logs, committed files, examples, snapshots, screenshots, or error responses. `.env.example` has placeholder values only; `.env.local` is ignored. No production credentials are created by development tasks.
+- Restrict privileged Supabase clients to narrow server adapters with an explicitly verified actor. RLS bypass makes these especially sensitive. Restrict security-definer functions, fixed `search_path`, and execution grants; never accept an arbitrary user ID as authorization.
+- Grade, finalize attempts, append evidence, and recompute mastery atomically. Use idempotency UUIDs plus canonical input hashes, unique constraints, and locks. Replay with a different payload is a conflict. Test concurrent requests, not just sequential retries.
+- Published content and assessment assignments are immutable by version. Changes create reviewed new versions. Keep logical question identity/topic attribution stable once published; grade corrections append auditable events and rebuild projections.
+- Follow the PRD mastery algorithm and evidence thresholds. Lesson completion, time spent, assisted answers, and AI prose feedback cannot raise objective mastery. Display unassessed/limited-evidence states honestly.
+- Deletion requires fresh authentication, cancellation/reconciliation of in-flight work, removal of owned content, and a documented backup/provider-retention policy. Test deletion across the complete synthetic ownership graph.
+
+## AI and execution rules
+
+- Call OpenAI only server-side through the configured adapter. Check current official OpenAI documentation for relevant API/model behavior; choose model IDs/prices using actual account access and evaluations, not presumed names or stale prices.
+- Enforce per-user calls/concurrency/input-output caps and a configured global monthly budget before provider calls. Atomically reserve a conservative maximum across user/global buckets, including bounded retries; reconcile once using usage metadata. Retain unknown-usage reservations until resolved. Never assume a provider alert is an application hard cap.
+- Ground the tutor in authorized published content and bounded owned history. Treat user text, job descriptions, retrieved text, generated Markdown, and submitted code as untrusted. Models cannot change authorization, scores, budgets, or schedules. Do not supply hidden assessment keys or credentials.
+- Use schema-constrained outputs for structured AI tasks and validate domain semantics. Handle refusals, incomplete output, provider errors, and interrupted streams explicitly. AI availability must not block lessons or deterministic quizzes.
+- Generated questions remain drafts until schema/key/explanation/reference checks and human/developer review pass. A second model's agreement is not proof. Maintain curated evaluations for factuality, hints, injection, data isolation, and cost/latency; rerun relevant cases on model/prompt changes.
+- Never execute untrusted Python/SQL in Next.js, Vercel app functions, the production database, Node VM, local shell, or application subprocesses. Monaco is only an editor. Phase 3 uses disposable managed isolation in a separate boundary with no production credentials/network path, strict resources, a trusted grading harness, and signed/replay-safe outcomes.
+- Never trust learner stdout to report test success. Keep expected outputs/hidden suites outside the learner process where possible. Distinguish runner failures from wrong answers and freeze timed-assessment source before the server deadline.
+- External jobs require durable dispatch, idempotent provider submission/lookup, monotonic state transitions, authenticated callbacks, and reconciliation. Fire-and-forget serverless work is not a reliable queue.
+
+## Testing and validation
+
+The repository initially has no runnable tests or commands. Create and document actual scripts during approved scaffolding; do not pretend the suggested commands below already exist. Proposed standard scripts are `dev`, `lint`, `typecheck`, `test`, `test:integration`, `test:e2e`, `test:content`, `eval:ai`, and `build`; their package-manager invocation follows the selected lockfile.
+
+Use Vitest for meaningful deterministic logic, database/SQL tests for constraints/RLS/RPCs, and Playwright for critical learner flows. Keep the stack small. Tests should protect behavior/invariants, not reproduce implementation constants or snapshot every UI detail.
+
+For implementation changes, run relevant focused tests and the configured lint/typecheck/build checks. Include migration/reset, RLS, and transaction tests for data/security changes; end-to-end checks for changed critical flows. Do not broaden/repeat successful checks without a new change, failure, or unresolved concern. Documentation-only changes need link/consistency/format review, not application tests that do not exist.
+
+Required areas include deterministic grading/mastery; hint/solution eligibility; key privacy; two-user isolation through direct APIs/RPCs; idempotency payload conflicts and concurrency; budgets/provider failure; content validation; timezone/DST; deletion; and later review/assessment/runner state machines. Use synthetic records and non-production services. CI mocks AI by default; paid live evaluations are opt-in and capped. Never run destructive or adversarial workloads against production infrastructure.
+
+For UI changes inspect representative desktop/mobile layouts, keyboard navigation, labels/focus, and loading/empty/error states. Automated accessibility checks complement manual review. Performance claims need measurements with a documented environment and dataset.
+
+## Development workflow and documentation
+
+1. Inspect the current repository and applicable instructions; map the task to PRD acceptance IDs and its phase. Respect existing authorization and preserve unrelated work.
+2. Implement the smallest coherent reviewable slice. Keep migrations, content, types, UI, and server rules consistent. Avoid unrelated refactors or speculative future features.
+3. Validate behavior and security boundaries with appropriate checks. Resolve failures caused by the change. Clearly state blocked or unrun checks and why; never fabricate passing tests, deployment status, or integrations.
+4. Update the affected root documents when scope, schema, routes, rules, tradeoffs, or operations change. Add setup/run/verification instructions when real commands exist. Record decisions and limitations where a future developer will find them.
+5. Review the diff for accidental secrets, generated clutter, unrelated changes, and mismatched docs. Summarize what changed, why, how it was verified, and any material remaining risk. Do not commit, push, provision services, deploy, or message others without the relevant user authorization.
+
+Use concise PR descriptions led by the concrete problem and resulting behavior, with acceptance IDs and actual validation. Distinguish mock fixtures from real provider checks. For staged rollout document migration compatibility, recovery, feature flags/kill switches, and observable success criteria. Do not imply that rolling back frontend code rolls back the database.
