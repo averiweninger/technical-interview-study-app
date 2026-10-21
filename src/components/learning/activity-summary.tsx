@@ -6,7 +6,7 @@ export function ActivitySummary() {
   return <ul className="divide-y divide-border">
     {recentActivity.map((activity) => <li key={activity.title}>
       <Link className="flex items-center gap-3 py-4 hover:text-primary" href={activity.href}>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Check size={16} /></span>
+        <Check size={16} className="shrink-0 text-primary" aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-medium">{activity.title}</span>
           <span className="mt-1 block text-xs text-muted-foreground">{activity.detail}</span>

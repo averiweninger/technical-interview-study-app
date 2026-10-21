@@ -68,7 +68,7 @@ test("settings apply across client navigation and reset on refresh", async ({ pa
   await expect(page.getByRole("heading", { name: "Welcome back, Alex." })).toBeVisible();
 });
 
-test("representative pages fit the viewport and expose no serious accessibility findings", async ({ page }) => {
+test("representative pages fit the viewport and expose no serious accessibility findings", async ({ page }, testInfo) => {
   for (const route of ["/dashboard", "/career-paths", "/learn", "/lessons/sql-joins", "/practice", "/progress", "/settings"]) {
     await page.goto(route);
     await expect(page.getByRole("main")).toBeVisible();
@@ -76,6 +76,7 @@ test("representative pages fit the viewport and expose no serious accessibility 
     expect(hasOverflow, route).toBe(false);
     const result = await new AxeBuilder({ page }).analyze();
     expect(result.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical"), route).toEqual([]);
+    if (route === "/dashboard") await page.screenshot({ path: testInfo.outputPath("dashboard.png") });
   }
 });
 
@@ -86,7 +87,7 @@ test("keyboard skip link and mobile navigation work", async ({ page, isMobile })
   if (isMobile) {
     await page.locator("summary").click();
     await page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link", { name: "Practice", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Practice with purpose." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Practice questions" })).toBeVisible();
     await expect(page.locator("details")).not.toHaveAttribute("open", "");
   }
 });
@@ -95,4 +96,23 @@ test("unknown topics show a recovery path", async ({ page }) => {
   // A streamed Next.js not-found page can use HTTP 200 after its loading boundary has sent headers.
   await page.goto("/learn/missing-topic");
   await expect(page.getByRole("link", { name: "Explore study topics" })).toBeVisible();
+});
+
+test("dark workspace preserves contrast, keyboard answers, and responsive layout", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/practice?topic=python");
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  const firstChoice = page.getByRole("radio").first();
+  await firstChoice.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("radio").nth(1)).toBeChecked();
+  await page.getByRole("button", { name: "Check answer" }).click();
+  await expect(page.getByText("Correct. Nicely reasoned.")).toBeVisible();
+
+  // Client navigation keeps the selected theme while checking both chart and form surfaces.
+  await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
+  await expect(page.locator('[data-theme="dark"]')).toBeVisible();
+  const findings = await new AxeBuilder({ page }).analyze();
+  expect(findings.violations.filter((item) => item.impact === "serious" || item.impact === "critical")).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
 });

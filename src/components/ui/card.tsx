@@ -1,7 +1,8 @@
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
-// A small shadcn-style surface shared by feature components; content stays with the feature.
+// Keep the base surface in the CSS components layer so selected/row variants can override it.
+// Page-specific utility classes still take precedence when a surface needs a targeted adjustment.
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div data-slot="card" className={cn("rounded-xl border border-border bg-card text-card-foreground shadow-sm", className)} {...props} />;
+  return <div data-slot="card" className={cn("ui-card", className)} {...props} />;
 }

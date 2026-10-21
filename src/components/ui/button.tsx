@@ -5,23 +5,23 @@ import { cn } from "@/lib/utils";
 
 // Adapted from the MIT-licensed shadcn/ui Button. asChild styles a Link without nesting interactive elements.
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:size-4",
   {
     variants: {
       variant: {
 
 
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary disabled:hover:bg-primary",
 
 
-        outline: "border border-border bg-card text-foreground hover:bg-muted",
+        outline: "border border-input bg-card text-foreground hover:bg-muted active:bg-muted disabled:hover:bg-card",
 
 
-        ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
+        ghost: "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted disabled:hover:bg-transparent disabled:hover:text-muted-foreground",
 
 
       },
-      size: { default: "min-h-11 px-4 py-2.5", sm: "min-h-10 px-3 py-2", icon: "size-11" },
+      size: { default: "min-h-12 px-4 py-2", sm: "min-h-11 px-3 py-2", icon: "size-12" },
     },
     defaultVariants: { variant: "default", size: "default" },
   },

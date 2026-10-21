@@ -4,7 +4,7 @@
 
 This repository now contains an authorized frontend prototype, the original planning documents, and a developer guide. At initial inspection on 2026-10-21 it contained only Git metadata; that observation is historical. The later frontend request authorizes Next.js, sample content, local quiz feedback, temporary preferences, and mock analytics only. It explicitly excludes backend integrations, authentication, OpenAI, executable practice, deployment, commits, and pushes. Do not report the complete Phase 1 MVP as implemented.
 
-Dependency installation was blocked by declined registry access, and the offline cache lacked packages. No lockfile has been generated. Read README.md and DEVELOPER_GUIDE.md for current setup and verification status; complete installation, pin resolved dependency versions, and generate/review the npm lockfile before claiming a runnable application. Public sample answers and browser grading are intentional prototype exceptions, never a design for production assessment security.
+Initial dependency installation was blocked; a later frontend inspection found installed dependencies and an npm lockfile. Verify current tooling and actual check results for each task rather than carrying forward historical setup blockers. Public sample answers and browser grading are intentional prototype exceptions, never a design for production assessment security.
 
 **Wait for the user's approval before beginning Phase 1 implementation.** This is the user's explicit instruction for the planning handoff, not a requirement to ask again on every task. Once the user authorizes Phase 1 or a particular action, proceed within that authorization without redundant approval questions. Later explicit user instructions take precedence over this file. Do not assume authorization to provision paid services, deploy to production, or start later phases from approval of a code change alone.
 
@@ -35,6 +35,14 @@ Keep one modular application and a deterministic learning orchestrator. Tutor/Pr
 - Preserve functioning features and unrelated user work. Make minimal, targeted changes; do not modify unrelated files.
 - Keep Codex responses concise to conserve tokens. Read relevant document sections and affected files; avoid repeatedly analyzing the entire repository or performing broad scans without need.
 - Do not automatically commit or push. Feature planning does not authorize implementation, external account setup, paid calls, or deployment.
+
+## Frontend design system
+
+- Follow [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and semantic tokens in `src/app/globals.css` for every frontend feature: warm off-white `#FAFAF8`, charcoal `#20252B`, muted navy `#315B75`, subtle borders `#E5E7EB`, white surfaces, and the documented dark equivalents.
+- Use the system font stack, restrained type hierarchy, 8px-based layout spacing, small radii, and minimal shadows. Reuse existing shadcn/ui primitives; add no dependency or imagery for decoration.
+- Choose layouts for the task: progress and a clear next action on dashboards, readable lesson columns, focused question forms, and labeled charts/tables. Avoid repetitive three-column card layouts and marketing copy.
+- Keep hover, focus, active, disabled, loading, empty, error, and success states consistent. Provide visible keyboard focus, native semantics, readable contrast, at least 44px interactive targets, responsive layouts, and reduced-motion support. Do not encode status through color alone.
+- Avoid gradients, glow, decorative orbs, glassmorphism, excessive badges/shadows, sparkle icons, oversized headings, and unnecessary animation. Preserve routes, behavior, demo labels, and existing content when styling.
 
 ## Interview research rules
 

@@ -21,13 +21,13 @@ export function TopicLibrary({ initialPath }: { initialPath?: string; }) {
   return (
     <>
       <PageHeading
-        eyebrow="BUILD YOUR FOUNDATION"
-        title="One concept at a time."
-        description="Explore the essentials, connect new ideas, and practice what you learn. Start small and keep going." />
-      <div className="mb-5 flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row">
+        eyebrow="Curriculum"
+        title="Study topics"
+        description="Find lessons by subject or filter the curriculum for a career path." />
+      <div className="mb-6 flex flex-col gap-4 rounded-lg border border-border bg-card p-4 sm:flex-row">
         <div className="relative flex-1">
           <label htmlFor="topic-search" className="sr-only">Search topics</label>
-          <Search size={17} className="pointer-events-none absolute top-3.5 left-3 text-muted-foreground" />
+          <Search size={17} className="pointer-events-none absolute top-4 left-3 text-muted-foreground" />
           <input id="topic-search" type="search" className="field pl-10" placeholder="Find a topic..." value={query} onChange={(event) => setQuery(event.target.value)} />
         </div>
         <div className="sm:w-64">
@@ -40,7 +40,7 @@ export function TopicLibrary({ initialPath }: { initialPath?: string; }) {
       </div>
       <p className="mb-4 text-xs text-muted-foreground" aria-live="polite">
         {visibleTopics.length} {visibleTopics.length === 1 ? "topic" : "topics"} · 6 educational sample lessons available across Python, SQL, and Algorithms</p>
-      {visibleTopics.length ? <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">{visibleTopics.map((topic) => <TopicCard key={topic.id} topic={topic} />)}</div> : <div className="rounded-xl border border-dashed border-border p-10 text-center">
+      {visibleTopics.length ? <div className="topic-library-grid">{visibleTopics.map((topic) => <TopicCard key={topic.id} topic={topic} />)}</div> : <div className="state-panel">
         <h2 className="text-lg font-semibold">No matching topics</h2>
         <p className="my-3 text-sm text-muted-foreground">Try a different keyword or explore all career paths.</p>
         <Button variant="outline" onClick={resetFilters}>Reset filters</Button>

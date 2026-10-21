@@ -25,9 +25,9 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
   const next = topicLessons[lessonIndex + 1];
   const check = questions.find((question) => question.id === lesson.checkQuestionId)!;
 
-  return <div className="mx-auto max-w-5xl">
+  return <div className="lesson-page">
     <Link className="section-link mt-6" href={`/learn/${topic.id}`}><ArrowLeft size={14} />{topic.name} lessons</Link>
-    <div className="my-7">
+    <div className="my-8">
       <p className="eyebrow">{topic.name} / LESSON {lessonIndex + 1} OF {topicLessons.length}</p>
       <h1>{lesson.title}</h1>
       <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -35,9 +35,9 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
         <span className="inline-flex items-center gap-1.5"><BookOpen size={14} />Educational sample</span>
       </div>
     </div>
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_240px]">
-      <article className="min-w-0 space-y-6">
-        <Card className="p-5 sm:p-7">
+    <div className="lesson-layout">
+      <article className="lesson-reading space-y-8">
+        <Card className="p-4 sm:p-6">
           <h2 className="section-title mb-4">What you will learn</h2>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground">
             {lesson.objectives.map((objective) => <li key={objective}>{objective}</li>)}
@@ -45,14 +45,14 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
         </Card>
         {lesson.sections.map((section, index) => <section id={`section-${index}`} key={section.title} className="scroll-mt-6">
           <h2 className="mb-3 text-xl font-semibold tracking-tight">{section.title}</h2>
-          <p className="text-sm leading-8 text-muted-foreground">{section.body}</p>
+          <p>{section.body}</p>
           {section.code && <pre className="code-block mt-4"><code>{section.code}</code></pre>}
         </section>)}
         <div className="callout">
           <h2 className="mb-2 flex items-center gap-2 font-semibold"><Lightbulb size={17} className="text-primary" />The key idea</h2>
           {lesson.takeaway}
         </div>
-        <Card className="p-5 sm:p-7">
+        <Card className="p-4 sm:p-6">
           <h2 className="section-title mb-5">Check your understanding</h2>
           <QuizQuestion key={check.id} question={check} />
         </Card>
@@ -62,17 +62,17 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
           {next ? <Button asChild><Link href={`/lessons/${next.id}`}>Next lesson <ArrowRight /></Link></Button> : <Button asChild><Link href={`/practice?topic=${topic.id}`}>Practice {topic.name} <ArrowRight /></Link></Button>}
         </div>
       </article>
-      <aside className="space-y-5 xl:sticky xl:top-6">
-        <Card className="p-5">
-          <h2 className="eyebrow">IN THIS LESSON</h2>
-          <nav aria-label="Lesson sections" className="mt-3 space-y-3">
-            {lesson.sections.map((section, index) => <a key={section.title} href={`#section-${index}`} className="block text-xs leading-6 text-muted-foreground hover:text-primary">
+      <aside className="space-y-8 xl:sticky xl:top-8">
+        <div className="lesson-outline">
+          <h2 className="section-title">In this lesson</h2>
+          <nav aria-label="Lesson sections" className="mt-2">
+            {lesson.sections.map((section, index) => <a key={section.title} href={`#section-${index}`} className="flex min-h-11 items-center py-2 text-sm leading-6 text-muted-foreground hover:text-primary hover:underline">
               {String(index + 1).padStart(2, "0")} · {section.title}
             </a>)}
           </nav>
-        </Card>
+        </div>
         <div className="px-1">
-          <h2 className="eyebrow">KEEP EXPLORING</h2>
+          <h2 className="eyebrow">Reference</h2>
           <a
             className="inline-flex items-start gap-2 text-xs leading-6 text-primary underline-offset-4 hover:underline"
             href={lesson.reference.url}

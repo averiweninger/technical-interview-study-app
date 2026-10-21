@@ -24,29 +24,28 @@ export default function ProgressPage() {
 
   return <>
     <PageHeading
-      eyebrow="SEE THE BIGGER PICTURE"
-      title="Progress you can understand."
-      description="Explore how completion, practice, and evidence can come together. Every number on this page is illustrative." />
+      eyebrow="Learning history"
+      title="Progress overview"
+      description="Compare sample topic completion, practice accuracy, and study activity." />
     <div className="callout mb-6 flex items-start gap-3">
       <CircleHelp size={19} className="mt-1 shrink-0 text-primary" />
       <p>
         <strong>Sample analytics, not your results.</strong> These static records demonstrate the planned dashboard. Mastery labels are illustrative; they are not calculated from your interactions or an implemented mastery algorithm.</p>
     </div>
-    <section aria-label="Illustrative progress statistics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => <Card className="stat-card" key={stat.label}>
-        <p className="text-xs text-muted-foreground">{stat.label}</p>
-        <p className="mt-3 text-3xl font-semibold tracking-tight">{stat.value}</p>
-        <p className="mt-2 text-[10px] text-muted-foreground">Demonstration data</p>
-      </Card>)}
+    <section aria-label="Illustrative progress statistics" className="metric-strip">
+      {stats.map((stat) => <div className="metric-item" key={stat.label}>
+        <p className="text-sm text-muted-foreground">{stat.label}</p>
+        <p className="metric-value">{stat.value}</p>
+      </div>)}
     </section>
     <Card className="mt-6 overflow-hidden">
-      <div className="p-5 sm:p-6">
-        <h2 className="section-title">Your topic landscape</h2>
+      <div className="p-4 sm:p-6">
+        <h2 className="section-title">Topic progress</h2>
         <p className="section-caption">Sample completion and practice evidence, kept separate.</p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-160 text-left text-sm">
-          <caption className="sr-only">Illustrative topic completion, accuracy, and mastery labels. No values reflect this visitor's activity.</caption>
+      <div className="overflow-x-auto" role="region" aria-label="Topic progress table" tabIndex={0}>
+        <table className="w-full min-w-160 text-left text-sm tabular-nums">
+          <caption className="sr-only">Illustrative topic completion, accuracy, and mastery labels. No values reflect this visitor&apos;s activity.</caption>
           <thead className="border-y border-border bg-muted text-xs text-muted-foreground">
             <tr>
               <th scope="col" className="px-6 py-3 font-medium">Topic</th>
@@ -73,15 +72,15 @@ export default function ProgressPage() {
         </table>
       </div>
     </Card>
-    <div className="mt-6 grid items-start gap-5 xl:grid-cols-2">
+    <div className="mt-6 grid items-start gap-6 xl:grid-cols-2">
       <Card className="p-6"><h2 className="section-title mb-5">Study activity</h2><StudyActivity /></Card>
       <Card className="p-6">
         <h2 className="section-title">Where to focus</h2>
-        <p className="section-caption">Examples based on the fixture's independent accuracy.</p>
+        <p className="section-caption">Based on the sample practice records.</p>
         <h3 className="eyebrow mt-6">STRONGEST IN THIS SAMPLE</h3>
         <ul className="space-y-3">
           {strongest.map((row) => <li key={row.topicId}>
-            <Link href={`/learn/${row.topicId}`} className="flex justify-between gap-4 text-sm hover:text-primary">
+            <Link href={`/learn/${row.topicId}`} className="flex min-h-11 items-center justify-between gap-4 text-sm hover:text-primary hover:underline">
               <span>{topics.find((topic) => topic.id === row.topicId)?.name}</span>
               <span className="text-primary">{Math.round(row.correct / row.answered * 100)}% sample accuracy</span>
             </Link>

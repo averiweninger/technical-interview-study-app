@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, type ReactNode } from "react";
-import { ArrowUpRight, BookOpen, ChartNoAxesCombined, Check, ChevronRight, CodeXml, Compass, FlaskConical, LayoutDashboard, Menu, Moon, Route, Settings, Sun } from "lucide-react";
+import { ArrowUpRight, BookOpen, ChartNoAxesCombined, ChevronRight, CodeXml, Compass, LayoutDashboard, Menu, Moon, Route, Settings, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDemoPreferences } from "@/features/settings/demo-preferences";
 import { cn } from "@/lib/utils";
@@ -19,10 +19,10 @@ const navigation = [
 
 function Brand() {
   return <Link href="/dashboard" className="flex items-center gap-3" aria-label="Interview Compass dashboard">
-    <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+    <span className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
       <Compass size={25} strokeWidth={1.6} />
     </span>
-    <span className="text-[15px] font-bold leading-tight tracking-tight">Interview<span className="block text-muted-foreground font-medium">Compass</span>
+    <span className="text-[15px] font-bold leading-tight tracking-tight">Interview{" "}<span className="block text-muted-foreground font-medium">Compass</span>
     </span>
   </Link>;
 }
@@ -46,7 +46,6 @@ export function AppShell({ children }: { children: ReactNode; }) {
         className={cn("nav-link", active && "nav-link-active")}>
         <Icon size={19} strokeWidth={1.8} />
         {label}
-        {active && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
       </Link>;
     });
   }
@@ -56,15 +55,12 @@ export function AppShell({ children }: { children: ReactNode; }) {
       <a href="#main-content" className="skip-link">Skip to content</a>
       <aside className="sidebar">
         <Brand />
-        <p className="mt-12 mb-4 px-3 text-[10px] font-bold tracking-[0.18em] text-muted-foreground">YOUR WORKSPACE</p>
+        <p className="mt-10 mb-2 px-4 text-xs font-medium text-muted-foreground">Workspace</p>
         <nav aria-label="Main navigation" className="space-y-1.5">{navLinks()}</nav>
         <div className="mt-auto pt-10">
-          <div className="rounded-xl border border-border bg-muted/60 p-4">
-            <span className="mb-3 flex size-8 items-center justify-center rounded-lg bg-card text-primary"><Check size={17} /></span>
-            <p className="text-sm font-semibold">Small steps. Real growth.</p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">A little focused practice goes a long way.</p>
-            <Link href="/learn" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary">Find your next lesson <ArrowUpRight size={14} />
-            </Link>
+          <div className="px-4">
+            <p className="text-xs font-medium text-muted-foreground">Curriculum</p>
+            <Link href="/learn" className="section-link">Browse lessons <ArrowUpRight size={14} /></Link>
           </div>
           <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
             <span className="avatar">{preferences.displayName.slice(0, 1).toUpperCase()}</span>
@@ -84,8 +80,7 @@ export function AppShell({ children }: { children: ReactNode; }) {
           </div>
           <div className="md:hidden"><Brand /></div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground sm:inline-flex">
-              <FlaskConical size={13} />Frontend preview</span>
+            <span className="hidden text-xs text-muted-foreground sm:block">Frontend preview</span>
             <Button
               variant="ghost"
               size="icon"
@@ -97,18 +92,17 @@ export function AppShell({ children }: { children: ReactNode; }) {
           </div>
         </header>
         <details ref={mobileMenu} className="mobile-navigation md:hidden">
-          <summary className="flex cursor-pointer items-center gap-2 px-5 py-3 text-sm font-semibold">
+          <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium">
             <Menu size={18} />Navigation<span className="ml-auto text-xs font-normal text-muted-foreground">{pageLabel}</span>
           </summary>
           <nav aria-label="Mobile navigation" className="space-y-1 border-t border-border px-3 py-3">{navLinks()}</nav>
         </details>
         <main id="main-content" className="page-content" tabIndex={-1}>
           <div className="demo-notice">
-            <span className="size-1.5 shrink-0 rounded-full bg-primary" />
             <p><strong>Demo workspace.</strong> Progress and activity are sample data. Preferences and practice answers reset on refresh.</p>
           </div>
           {children}
-          <footer className="page-footer"><span>Interview Compass</span><span>Built for steady progress, one concept at a time.</span></footer>
+          <footer className="page-footer"><span>Interview Compass</span><span>Educational preview · sample data</span></footer>
         </main>
       </div>
     </>

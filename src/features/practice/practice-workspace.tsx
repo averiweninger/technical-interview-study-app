@@ -44,10 +44,10 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
 
   return <>
     <PageHeading
-      eyebrow="PUT YOUR KNOWLEDGE TO WORK"
-      title="Practice with purpose."
-      description="Try a question, explain your thinking, and learn from the feedback. No timer. No pressure." />
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
+      eyebrow="Practice"
+      title="Practice questions"
+      description="Choose a topic and format. Review the explanation after each answer." />
+    <div className="practice-layout">
       <div className="min-w-0">
         <Card className="mb-4 grid gap-4 p-4 sm:grid-cols-2">
           <div>
@@ -73,11 +73,11 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
           <Button variant="outline" onClick={() => { setTopicId("all"); setKind("all"); setIndex(0); setFinished(false); }}>Show all questions</Button>
         </Card> : finished ? <Card className="p-8">
           <p className="eyebrow">END OF THIS QUESTION SET</p>
-          <h2 className="text-2xl font-semibold">A little more understanding.</h2>
+          <h2 className="text-xl font-semibold">Practice set complete</h2>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">You reached the end of these {filtered.length} sample questions. Browsing a question does not count as answering it.</p>
           <p className="mt-4 text-sm">This visit: <strong>{graded.length}</strong> multiple-choice questions answered, <strong>{correct}</strong> correct. Self-review and code drafts are ungraded.</p>
           <Button className="mt-6" onClick={restartPractice}><RotateCcw />Start a fresh practice</Button>
-        </Card> : <Card className="p-5 sm:p-7">
+        </Card> : <Card className="practice-question-panel">
           <div className="mb-4 flex justify-between gap-3 text-xs text-muted-foreground">
             <span>{topics.find((topic) => topic.id === question.topicId)?.name}</span>
             <span>Question {index + 1} of {filtered.length}</span>
@@ -94,7 +94,7 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
           <p className="mt-3 text-xs leading-6 text-muted-foreground">You can skip questions. Leaving a question clears its draft; returning starts a fresh form.</p>
         </Card>}
       </div>
-      <aside className="space-y-5">
+      <aside className="space-y-6">
         <Card className="p-5">
           <h2 className="section-title">This practice visit</h2>
           <p className="section-caption">Temporary multiple-choice results.</p>
@@ -108,7 +108,7 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
           <Button className="mt-5 w-full" variant="outline" onClick={restartPractice}><RotateCcw />Reset this visit</Button>
         </Card>
         <div className="callout">
-          <h2 className="mb-2 font-semibold">Learning, not assessment</h2>
+          <h2 className="mb-2 font-semibold">About this practice</h2>
           <p>Answers are public demo content. Self-review and coding exercises are ungraded. Your practice does not update the sample progress page.</p>
           <Link className="section-link mt-4" href="/learn">Revisit a lesson <ArrowRight size={14} /></Link>
         </div>

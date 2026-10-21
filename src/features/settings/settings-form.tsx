@@ -36,11 +36,11 @@ export function SettingsForm() {
 
   return <>
     <PageHeading
-      eyebrow="MAKE SPACE FOR LEARNING"
-      title="A workspace that fits you."
-      description="Try the preferences below. Nothing is sent to a server or saved permanently." />
-    <form onSubmit={savePreferences} className="max-w-4xl space-y-5">
-      <Card className="p-5 sm:p-7">
+      eyebrow="Workspace"
+      title="Settings"
+      description="Adjust your profile, study preferences, and appearance for this visit." />
+    <form onSubmit={savePreferences} className="max-w-3xl space-y-6">
+      <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><UserRound size={18} className="text-primary" />Demo profile</h2>
         <p className="section-caption">No account is connected. This name only changes your greeting and profile initials.</p>
         <div className="mt-6 max-w-lg">
@@ -55,7 +55,7 @@ export function SettingsForm() {
             autoComplete="off" />
         </div>
       </Card>
-      <Card className="p-5 sm:p-7">
+      <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><SlidersHorizontal size={18} className="text-primary" />Study preferences</h2>
         <p className="section-caption">The career path is shared with Career Paths. Time and explanation preferences preview future planner and tutor inputs.</p>
         <div className="mt-6 space-y-5">
@@ -96,7 +96,7 @@ export function SettingsForm() {
           </div>
         </div>
       </Card>
-      <Card className="p-5 sm:p-7">
+      <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><Monitor size={18} className="text-primary" />Appearance</h2>
         <p className="section-caption">Theme changes apply immediately and last for this visit. The header control uses the same preference.</p>
         <div className="mt-6 max-w-lg">

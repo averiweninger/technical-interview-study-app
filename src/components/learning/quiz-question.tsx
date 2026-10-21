@@ -92,9 +92,10 @@ function SelfReviewAnswer({ question }: { question: Exclude<PracticeQuestion, Mu
 // Parent components set a question-specific key, giving each new question a fresh answer form.
 export function QuizQuestion({ question, onGrade }: QuizProps) {
   return <div>
-    <div className="mb-4 flex flex-wrap gap-2">
-      <span className="pill">{question.difficulty}</span>
-      <span className="pill">
+    <div className="mb-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+      <span>{question.difficulty}</span>
+      <span aria-hidden="true">·</span>
+      <span>
         {question.kind === "multiple-choice" ? "Multiple choice" : question.kind === "short-answer" ? "Self-review" : "Display-only exercise"}
       </span>
     </div>
