@@ -1,10 +1,10 @@
 # Development roadmap
 
-Status: proposed full-product roadmap, 2026-10-21. The original empty-repository observation is historical. The user subsequently authorized a frontend-only foundation: navigation, sample curriculum, local quizzes/self-review, illustrative analytics, temporary settings, and developer documentation. That source now exists, with installation/runtime verification blocked by dependency access. This is partial foundation work, not completion of P1-A or a Phase 1 exit gate. Backend/auth/AI, the reviewed launch bank, persistent learning evidence, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for actual commands and verification status.
+Status: proposed full-product roadmap, 2026-10-21. The frontend foundation and design system exist with installed dependencies and an npm lockfile. Step 3A adds anonymous Supabase client utilities and a redacted local initialization check only. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. Authentication, tables/migrations, persistent learning evidence, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
 
 ## Delivery strategy and implementation sequence
 
-Keep one Next.js application, one Supabase project per environment, and the three module boundaries in [ARCHITECTURE.md](ARCHITECTURE.md). Reuse the functioning frontend and shared curriculum. Steps 1–2 refer to the existing planning/frontend foundation, whose last documented runtime verification was incomplete; verify the affected setup before future implementation rather than assuming those checks passed.
+Keep one Next.js application, one Supabase project per environment, and the three module boundaries in [ARCHITECTURE.md](ARCHITECTURE.md). Reuse the functioning frontend and shared curriculum. Steps 1–2 refer to the existing planning/frontend foundation; verify affected setup and checks for each implementation task.
 
 The requested Steps 3–9 below replace the earlier task order. Phase 1 covers Steps 3–4, Phase 2 covers Steps 5–7, and Phase 3 covers Steps 8–9. Moving the tutor to Step 6 is an intentional change from the original Phase 1 scope, so research/AI accounting can be established first. Foundational learning remains usable without either provider. Every step is planned, requires appropriate implementation authorization, and has focused tests; Step 9 adds final release hardening rather than postponing testing.
 

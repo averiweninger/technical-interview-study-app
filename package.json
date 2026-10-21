@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "packageManager": "npm@11.19.1",
-  "engines": { "node": "24.22.1", "npm": "11.19.1" },
+  "engines": {
+    "node": "24.22.1",
+    "npm": "11.19.1"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,16 +16,19 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:content": "node scripts/validate-content.ts",
+    "check:supabase": "node --env-file=.env.local scripts/check-supabase.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/supabase-js": "2.118.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^16.4.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "server-only": "0.0.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

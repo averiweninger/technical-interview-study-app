@@ -2,7 +2,7 @@
 
 Status: proposed full-system architecture, 2026-10-21. The initial empty-repository inspection is historical. A later authorized frontend foundation now uses Next.js App Router, typed fixtures in `src/data/mock`, shared components, and small client feature modules. One React context shares temporary preferences; other state stays local. Current routes are `/dashboard`, `/career-paths`, `/learn`, `/learn/[topicSlug]`, `/lessons/[lessonId]`, `/practice`, `/progress`, and `/settings`. `/` redirects to the dashboard.
 
-The frontend uses public demonstration answers and local feedback, not private assessment keys or the production grading/mastery flow below. There are no server use cases, API integrations, database migrations, AI calls, or execution services yet. Dependency installation and runtime verification are pending; see DEVELOPER_GUIDE.md. The original proposed structure below remains a guide for later authorized features, not an inventory of existing directories.
+The frontend uses public demonstration answers and local feedback, not private assessment keys or the production grading/mastery flow below. Step 3A adds anonymous Supabase client initialization utilities only; routes still use fixtures. There are no authenticated server use cases, database migrations, AI calls, or execution services yet. See DEVELOPER_GUIDE.md for setup and verification. The original proposed structure below remains a guide for later authorized features, not an inventory of existing directories.
 
 ## Decisions and boundaries
 
@@ -145,6 +145,8 @@ Proposed structure below is a recommendation; directories are not being scaffold
 Place `server-only` guards on AI, privileged Supabase clients, answer-key access, and other sensitive modules. Auth refresh uses the current framework-supported request boundary (for example `proxy.ts` where applicable); its location and implementation follow the pinned Next.js/Supabase versions. It is not the sole authorization layer.
 
 ## Backend, identity, and data access
+
+**Step 3A boundary:** `src/lib/supabase/client.ts` creates a fresh, anonymous `@supabase/supabase-js` client from the public URL and publishable key. `server.ts` supplies a guarded server entry point using the same unprivileged configuration. Both initialize lazily with session persistence, automatic refresh, and URL session detection disabled. No application route calls them yet, and no privileged client or database types are invented before migrations exist. `npm run check:supabase` verifies local initialization without logging configuration or making network calls; it does not prove project reachability, API-key acceptance, or RLS correctness. When authentication is authorized, replace these anonymous factories with the cookie-aware clients described below before adding user-scoped operations.
 
 Use Supabase Auth email/password with confirmation and password recovery. Use the supported `@supabase/ssr` cookie clients and verified claims/user lookup per the installed SDK guidance; do not authorize from an unverified locally decoded session. Follow the official [Supabase SSR guide](https://supabase.com/docs/guides/auth/server-side/nextjs). Restrict auth callback URLs and relative post-login destinations. Refresh cookies where the framework permits writes. Test expired sessions, callback failures, and revoked users; require recent authentication for deletion.
 

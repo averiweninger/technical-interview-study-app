@@ -1,6 +1,6 @@
 # Developer Guide
 
-Interview Compass currently contains an interactive frontend prototype. Its lessons and question feedback are usable in the browser once dependencies are installed. Progress charts and study history use explicitly labeled mock records. There is no authentication, database, AI integration, code runner, or deployment configuration.
+Interview Compass currently contains an interactive frontend prototype and Step 3A anonymous Supabase client utilities. Progress charts and study history still use explicitly labeled mock records. There is no authentication flow, application database schema, persisted progress, AI integration, code runner, or deployment configuration.
 
 The implementation intentionally stops before the complete Phase 1 product in [PRD.md](PRD.md). The user's frontend request permits public sample answers and local grading for demonstration. Production assessment keys must move behind authenticated server workflows before real assessments are introduced.
 
@@ -11,13 +11,25 @@ Next.js App Router supplies routes, layouts, and React rendering. TypeScript des
 Node **24.22.1** and npm **11.19.1** are pinned in `.nvmrc`, `package.json`, and the package-manager field. Install those versions and ensure `node --version` and `npm --version` work in your terminal. Reopen your terminal or editor after installing Node if needed.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 Open the local URL printed by Next.js, normally `http://localhost:3000`.
 
-**Current installation limitation:** Registry access was declined during this implementation session. The offline install also failed because packages were not cached. There is no generated lockfile and dependency compatibility has not yet been verified. Dependency ranges in `package.json` are provisional until the first successful install. Generate and review `package-lock.json`, resolve any compatibility errors, pin the resolved direct dependency versions, and keep npm as the only package manager. After a lockfile exists, use `npm ci` for reproducible installations. No credentials or environment variables are needed for this frontend.
+Dependencies and `package-lock.json` are present; use npm as the only package manager and `npm ci` for reproducible installation. The existing demo routes do not require provider configuration. Supabase initialization requires the public variables documented below.
+
+### Step 3A: Supabase connection setup
+
+Keep the existing `.env.local` in the repository root. For a new checkout, copy `.env.example` to `.env.local` and replace its placeholders with the project's `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Next.js loads this file automatically. Never put a secret/service-role key in a `NEXT_PUBLIC_` variable. Publishable keys are intentionally usable in browser code; future data security still depends on grants and RLS. See the [official Supabase key guide](https://supabase.com/docs/guides/getting-started/api-keys).
+
+- `src/lib/supabase/client.ts`: lazy anonymous client factory for browser-compatible/shared code. Validates public configuration and returns fixed, redacted diagnostics.
+- `src/lib/supabase/server.ts`: `server-only` entry point returning a fresh anonymous client per call; no global server session or privileged key.
+- `npm run check:supabase`: uses Node's `--env-file` loader and verifies initialization without printing URLs, keys, or client objects. It makes no API requests and does not verify remote connectivity or permissions.
+
+Session persistence, token refresh, and URL session detection are disabled. These factories do not implement sign-in or cookie-based SSR; adopt the documented `@supabase/ssr` flow when authentication is authorized. No route uses Supabase yet, so the frontend's behavior and styling remain independent of its configuration. No tables or generated schema types are added in Step 3A.
+
+Verify local protection with `git check-ignore .env.local` and ensure `git ls-files .env.local` returns nothing. `.env*` is ignored; the placeholder-only `.env.example` is explicitly allowed. Do not log or commit `.env.local`.
 
 The manual scaffold preserves the existing repository and documents. It follows the official [Next.js installation guide](https://nextjs.org/docs/app/getting-started/installation), [Tailwind Next.js guide](https://tailwindcss.com/docs/installation/framework-guides/nextjs), and [shadcn/ui manual setup](https://ui.shadcn.com/docs/installation/manual). Next.js 16 uses asynchronous route parameters and a separate ESLint command.
 

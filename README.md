@@ -2,7 +2,7 @@
 
 Interview Compass is an AI-powered adaptive learning platform in development, designed to help students and professionals prepare for technical interviews. The current frontend prototype connects educational sample lessons, interactive practice, and illustrative progress displays. The long-term plan adds grounded AI tutoring and evidence-based personalization.
 
-**Status:** Initial development stage with frontend source implemented. Dependency installation and runtime verification are pending because registry access was declined during this session. No database, authentication, OpenAI integration, code execution, or deployment is configured. This is not the complete Phase 1 MVP.
+**Status:** Initial development stage with a working frontend prototype and Step 3A anonymous Supabase client setup. Progress remains illustrative; authentication, application tables, persistence, OpenAI integration, code execution, and deployment are not implemented. This is not the complete Phase 1 MVP.
 
 ## Frontend Prototype
 
@@ -61,7 +61,7 @@ This is shared foundational coverage. Phase 1 Python and SQL preparation will us
 
 ## Planned Technology Stack
 
-The frontend manifest configures Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned; dependency installation and lockfile generation are pending. Supabase, OpenAI, Monaco, the runner, and hosting remain future integrations.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned and an npm lockfile is present. The official Supabase JavaScript client is configured for anonymous initialization only; authentication and data integration follow later. OpenAI, Monaco, the runner, and hosting remain planned.
 
 | Technology | Intended role |
 | --- | --- |
@@ -119,16 +119,16 @@ Phase gates will require evidence from behavior, security, content, accessibilit
 
 ## Getting Started
 
-Use **Node.js 24.22.1** and **npm 11.19.1**. No environment variables, provider accounts, or credentials are required for the frontend.
+Use **Node.js 24.22.1** and **npm 11.19.1**. The existing demo routes work without provider configuration.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 Open the URL printed by Next.js, normally `http://localhost:3000`. The root route opens the dashboard.
 
-**Setup limitation:** Installation could not complete in this session: npm registry access was declined, and the required packages were absent from the offline cache. No lockfile was fabricated. The first successful `npm install` must generate a reviewed `package-lock.json`; pin the resolved direct dependency versions then. Afterward, use `npm ci`. Until installation succeeds, the frontend cannot be claimed to build or run successfully.
+For Supabase setup, keep the existing `.env.local`, or copy `.env.example` into it on a new checkout and replace the public URL and publishable-key placeholders. Run `npm run check:supabase` to verify local client initialization without printing configuration. This does not make a network request or verify remote project access. `.env.local` is ignored by Git. See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#step-3a-supabase-connection-setup) for the setup boundary and future authentication work.
 
 | Command | Purpose |
 | --- | --- |
@@ -136,12 +136,13 @@ Open the URL printed by Next.js, normally `http://localhost:3000`. The root rout
 | `npm run typecheck` | Strict TypeScript checks |
 | `npm run lint` | ESLint checks |
 | `npm run test:content` | Dependency-free fixture integrity checks with Node 24 |
+| `npm run check:supabase` | Redacted local initialization check using `.env.local`; no network requests |
 | `npm test` | Vitest grading and content-integrity tests |
 | `npm run test:e2e` | Playwright learner flows and accessibility checks; requires Chromium |
 | `npm run build` | Production build |
 | `npm start` | Serve an existing production build |
 
-After dependencies are available, install the test browser with `npx playwright install chromium`. Content validation passed during implementation. Full typecheck, lint, unit tests, production build, and browser verification remain blocked by dependency installation.
+Install the test browser with `npx playwright install chromium`, or use an already installed Chrome/Edge browser through `PLAYWRIGHT_CHANNEL`. The frontend has passed lint, TypeScript, unit tests, production build, and browser checks; run the relevant checks again after changes.
 
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for the folder structure, state flow, quiz logic, content-editing instructions, verification limits, and troubleshooting.
 
