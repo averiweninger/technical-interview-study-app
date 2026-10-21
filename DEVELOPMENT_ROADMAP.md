@@ -18,6 +18,18 @@ The requested Steps 3–9 below replace the earlier task order. Phase 1 covers S
 | **8. Secure coding exercises and mock assessments** | Managed isolated Python/SQL execution, Monaco, trusted grading, server-timed mocks, text simulations/reports | Step 7; separately approved runner access/budget and isolation proof of concept. Pass runner/callback/deadline/hidden-test security gates before enabling execution. |
 | **9. Testing and deployment** | Cross-system regression/evaluation, accessibility/mobile review, staging restore/deletion drills, provider kill switches, operational/privacy documentation, authorized rollout | Prior step gates; verified external configurations and explicit deployment authorization. Record real outcomes and remaining limits; planning or code approval alone never authorizes production deployment. |
 
+## Security gates for every phase
+
+Apply the permanent [AGENTS.md security baseline](AGENTS.md#application-security-baseline) and the existing [architecture boundaries](ARCHITECTURE.md) during each authorized implementation slice. Security checks accompany development; Step 9 does not defer them. These requirements do not authorize new features, services, or production testing.
+
+| Phase | Required security evidence before its exit gate |
+| --- | --- |
+| **1 / Steps 3–4** | Verified Supabase server authorization; secure session refresh/logout, cookies, confirmation and redirect handling; server input validation; endpoint authorization and abuse limits. Verify least-privilege grants/RLS on all user-owned or exposed tables, private-key protection, and two-user/anonymous isolation through direct APIs/RPCs. Exercise XSS, applicable CSRF, and SQL-injection defenses. |
+| **2 / Steps 5–7** | Extend the Phase 1 checks to research, conversations, plans, and derived data. Test untrusted content/prompt injection, safe rendering and retrieval, cross-user access, server-only AI/search calls, usage/rate limits, concurrent budget reservations, and provider failure. |
+| **3 / Steps 8–9** | Prove submitted code runs only in managed disposable isolation, without production credentials or connectivity; test signed callbacks, hidden-test privacy, resource limits, and cross-user job access. Rerun relevant prior security gates and verify HTTPS, cookies, security headers, and private-response caching in staging before deployment. |
+
+At each phase gate and dependency change, review dependency vulnerability reports, address exploitable findings, and record actual security check outcomes. Before any production release, document remaining vulnerabilities, untested boundaries, provider/retention limitations, and required Supabase/hosting settings in the existing operational documentation. Unresolved critical authorization, data-isolation, or execution-isolation failures block release; do not present planned protections as functioning controls.
+
 ## Phase 1: functional MVP
 
 Steps 3–4 deliver the first persistent learning MVP: a small reviewed curriculum, deterministic single-choice grading, explainable topic evidence, history, and a rule-based next action. The reviewed text tutor now follows in Step 6. Product acceptance criteria and content minimums live in PRD.md, not a second feature specification here.

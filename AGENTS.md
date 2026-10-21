@@ -36,6 +36,15 @@ Keep one modular application and a deterministic learning orchestrator. Tutor/Pr
 - Keep Codex responses concise to conserve tokens. Read relevant document sections and affected files; avoid repeatedly analyzing the entire repository or performing broad scans without need.
 - Do not automatically commit or push. Feature planning does not authorize implementation, external account setup, paid calls, or deployment.
 
+## Application security baseline
+
+- Validate all user-controlled inputs on the server, including IDs, URLs, uploaded/retrieved content, and provider callbacks. Authorize protected API endpoints and apply appropriate per-user/IP rate limits, request-size limits, and concurrency caps; public auth endpoints still need abuse protection.
+- Use the official Supabase session flow. Refresh and verify sessions server-side; handle expiry, revocation, logout, and failures explicitly. Use Secure cookies over HTTPS, appropriate SameSite settings, and HttpOnly where compatible with the documented SSR flow. Allowlist callback origins and local redirect destinations; return safe authentication errors without leaking credentials or account existence.
+- Require HTTPS and reviewed production security headers, including CSP, HSTS, frame restrictions, content-type protections, and a suitable referrer policy. Keep authenticated responses out of shared caches.
+- Prevent XSS through safe rendering and sanitization of untrusted rich content; use parameterized database operations against SQL injection. Enforce same-origin/CSRF protection where cookie-authenticated mutations require it. Follow the AI rules below for prompt injection; a model cannot enforce authorization.
+- Review dependency vulnerability reports when adding/updating packages and before release; remediate exploitable findings and document unresolved risks. Never treat a clean audit as proof of application security.
+- Include relevant security checks in every implementation phase, especially two-user and anonymous access tests. Before production, document implemented controls, untested boundaries, remaining vulnerabilities, provider/retention limits, and required dashboard configuration. Planned controls are not implemented guarantees; unresolved critical access or isolation failures block release.
+
 ## Frontend design system
 
 - Follow [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and semantic tokens in `src/app/globals.css` for every frontend feature: warm off-white `#FAFAF8`, charcoal `#20252B`, muted navy `#315B75`, subtle borders `#E5E7EB`, white surfaces, and the documented dark equivalents.
@@ -67,10 +76,10 @@ Keep one modular application and a deterministic learning orchestrator. Tutor/Pr
 ## Database and security invariants
 
 - Make schema changes through reviewed SQL migrations; generate database types after schema changes. Do not hand-edit generated types or make undocumented dashboard-only schema edits.
-- Enable RLS and explicit grants on every exposed table. Test two users plus anonymous access. Enforce owner relationships with composite FKs where needed. Owner visibility does not authorize a learner to edit grades, assistance flags, publication, or quotas.
+- Enable RLS on every user-owned or exposed table, with explicit least-privilege grants and appropriate owner policies. Test two users plus anonymous access. Enforce owner relationships with composite FKs where needed. Owner visibility does not authorize a learner to edit grades, assistance flags, publication, or quotas.
 - Keep keys, hints before permitted release, hidden tests, reviews, and cost ledgers in a non-exposed private schema. Return explicit safe DTOs. Raw attempt/job/assessment reads must not bypass feedback-release policies.
-- Verify identity and ownership inside every handler/action/RPC boundary. Route protection and UI checks are insufficient. Use the current supported Supabase SSR verification flow, allowlisted callbacks, and same-origin/CSRF protection.
-- Never expose secrets through `NEXT_PUBLIC_`, client code, logs, committed files, examples, snapshots, screenshots, or error responses. `.env.example` has placeholder values only; `.env.local` is ignored. No production credentials are created by development tasks.
+- Use Supabase Auth with verified server-side identity and ownership checks inside every handler/action/RPC boundary. Route protection, UI checks, and unverified session contents are insufficient. Follow the current supported Supabase SSR verification flow.
+- Never expose secret keys, passwords, or private user data through client bundles, logs, committed files, examples, snapshots, screenshots, or error responses. Return private data only to authorized users through safe DTOs; secret keys never use `NEXT_PUBLIC_`. Delegate password storage and verification to Supabase Auth. `.env.example` has placeholder values only; `.env.local` is ignored. No production credentials are created by development tasks.
 - Restrict privileged Supabase clients to narrow server adapters with an explicitly verified actor. RLS bypass makes these especially sensitive. Restrict security-definer functions, fixed `search_path`, and execution grants; never accept an arbitrary user ID as authorization.
 - Grade, finalize attempts, append evidence, and recompute mastery atomically. Use idempotency UUIDs plus canonical input hashes, unique constraints, and locks. Replay with a different payload is a conflict. Test concurrent requests, not just sequential retries.
 - Published content and assessment assignments are immutable by version. Changes create reviewed new versions. Keep logical question identity/topic attribution stable once published; grade corrections append auditable events and rebuild projections.
