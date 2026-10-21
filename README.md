@@ -2,9 +2,11 @@
 
 Interview Compass is an AI-powered adaptive learning platform in development, designed to help students and professionals prepare for technical interviews. The current frontend prototype connects educational sample lessons, interactive practice, and illustrative progress displays. The long-term plan adds grounded AI tutoring and evidence-based personalization.
 
-**Status:** Initial development stage with a working frontend prototype and Step 3A anonymous Supabase client setup. Progress remains illustrative; authentication, application tables, persistence, OpenAI integration, code execution, and deployment are not implemented. This is not the complete Phase 1 MVP.
+**Status:** Initial development stage with email/password signup, login, confirmation, logout, and protected study routes using Supabase SSR sessions (Step 3B). Progress remains illustrative; application tables, persistent learning progress, password recovery, OpenAI, code execution, and deployment are not implemented. Hosted email delivery and dashboard configuration require verification. This is not the complete Phase 1 MVP.
 
 ## Frontend Prototype
+
+Signup stores first/last names in Supabase Auth metadata. The workspace shows the verified account name/email, and Settings supports name updates and confirmed email changes. Account deletion is clearly marked unavailable until its secure server backend and retention workflow are configured; no active deletion control is exposed.
 
 | Page | Implemented in source |
 | --- | --- |
@@ -61,7 +63,7 @@ This is shared foundational coverage. Phase 1 Python and SQL preparation will us
 
 ## Planned Technology Stack
 
-The frontend uses Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned and an npm lockfile is present. The official Supabase JavaScript client is configured for anonymous initialization only; authentication and data integration follow later. OpenAI, Monaco, the runner, and hosting remain planned.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned and an npm lockfile is present. Official Supabase JavaScript/SSR clients provide email authentication; Zod validates forms on the server. Study data integration, OpenAI, Monaco, the runner, and hosting remain planned.
 
 | Technology | Intended role |
 | --- | --- |
@@ -107,19 +109,19 @@ Only eligible independently graded answers will contribute to objective mastery 
 
 ## Development Roadmap
 
-The authorized frontend foundation is implemented in source, with installation and runtime verification pending. The three full product phases below remain incomplete. Backend services and later capabilities require their own authorized development scope.
+The frontend foundation and Step 3B authentication are implemented. The three full product phases below remain incomplete. Further backend services and later capabilities require their own authorized development scope.
 
 | Phase | Planned deliverable | Status |
 | --- | --- | --- |
-| **1 — Functional MVP** | Authentication, path selection and optional interview date, minimum reviewed curriculum, single-choice quizzes, text tutor with cost controls, basic dashboard/history, settings, and conversation/account deletion | Frontend prototype in source; complete MVP remains planned |
-| **2 — Adaptive Learning** | Diagnostics, capacity-aware study plans, optional job description analysis, adaptive difficulty, spaced repetition, expanded analytics, and reviewed AI draft tooling | Planned; follows a stable Phase 1 |
+| **1 — Functional MVP** | Authentication, path selection and optional interview date, minimum reviewed curriculum, single-choice quizzes, basic dashboard/history, settings, and account deletion | Authentication and sample frontend implemented; persistent MVP remains planned |
+| **2 — Adaptive Learning** | Interview research, grounded tutoring with usage limits, diagnostics, capacity-aware study plans, adaptive difficulty, spaced repetition, expanded analytics, and reviewed AI draft tooling | Planned; follows a stable Phase 1 |
 | **3 — Advanced Interview Preparation** | Monaco-based Python/SQL practice with managed isolation, timed mocks, text interview simulations, and advanced reports | Planned; follows Phase 2 and runner verification |
 
 Phase gates will require evidence from behavior, security, content, accessibility, and relevant AI evaluations. Detailed task dependencies and release criteria are in [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
 
 ## Getting Started
 
-Use **Node.js 24.22.1** and **npm 11.19.1**. The existing demo routes work without provider configuration.
+Use **Node.js 24.22.1** and **npm 11.19.1**. Study routes now require a Supabase account session and the existing public provider configuration.
 
 ```bash
 npm ci
@@ -128,7 +130,7 @@ npm run dev
 
 Open the URL printed by Next.js, normally `http://localhost:3000`. The root route opens the dashboard.
 
-For Supabase setup, keep the existing `.env.local`, or copy `.env.example` into it on a new checkout and replace the public URL and publishable-key placeholders. Run `npm run check:supabase` to verify local client initialization without printing configuration. This does not make a network request or verify remote project access. `.env.local` is ignored by Git. See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#step-3a-supabase-connection-setup) for the setup boundary and future authentication work.
+Keep the existing `.env.local`, or copy `.env.example` into it on a new checkout and replace the public Supabase URL and publishable-key placeholders. Set `APP_URL` to the application origin (required in production; HTTPS outside localhost). Development defaults to `http://localhost:3000`. Open `/signup` or `/login`; signed-in users can sign out from the workspace header. Configure email confirmation and redirect URLs using [the authentication setup guide](DEVELOPER_GUIDE.md#step-3b-authentication-and-dashboard-configuration). `.env.local` stays ignored. `npm run check:supabase` only verifies stateless local client initialization, not hosted authentication or database access.
 
 | Command | Purpose |
 | --- | --- |

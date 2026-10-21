@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./auth-fixture";
 import AxeBuilder from "@axe-core/playwright";
 
 test("navigation, temporary path selection, and topic filtering", async ({ page, isMobile }) => {
@@ -58,14 +58,14 @@ test("self-review and display-only coding have no execution controls", async ({ 
 
 test("settings apply across client navigation and reset on refresh", async ({ page }) => {
   await page.goto("/settings");
-  await page.getByLabel("Display name").fill("Jordan");
+  await page.getByLabel("Daily study goal (minutes)").fill("45");
   await page.getByLabel("Theme", { exact: true }).selectOption("dark");
   await page.getByRole("button", { name: "Apply for this visit" }).click();
   await expect(page.locator('[data-theme="dark"]')).toBeVisible();
   await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
-  await expect(page.getByRole("heading", { name: "Welcome back, Jordan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Welcome back, Alex." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
 });
 
 test("representative pages fit the viewport and expose no serious accessibility findings", async ({ page }, testInfo) => {
@@ -82,6 +82,8 @@ test("representative pages fit the viewport and expose no serious accessibility 
 
 test("keyboard skip link and mobile navigation work", async ({ page, isMobile }) => {
   await page.goto("/dashboard");
+  // Authenticated pages stream after server verification; wait for the workspace before typing.
+  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   if (isMobile) {

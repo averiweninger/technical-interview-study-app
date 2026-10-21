@@ -15,7 +15,7 @@ import { useDemoPreferences } from "@/features/settings/demo-preferences";
 
 // Only the greeting is personalized. All performance data below comes from the labeled fixtures.
 export function Dashboard() {
-  const { preferences } = useDemoPreferences();
+  const { account } = useDemoPreferences();
   const statCards = [
     { label: "Study progress", value: `${demoStats.completion}%`, note: "Sample topic completion" },
     { label: "Questions completed", value: demoStats.answered, note: "Sample practice history" },
@@ -27,7 +27,7 @@ export function Dashboard() {
     <>
       <PageHeading
         eyebrow="Overview"
-        title={`Welcome back, ${preferences.displayName}.`}
+        title={`Welcome back, ${account.displayName}.`}
         description="Review sample progress and continue with a lesson or practice set."
         action={<Button variant="outline" asChild><Link href="/practice">Open practice <ArrowRight /></Link></Button>} />
       <section aria-label="Sample study statistics" className="metric-strip">

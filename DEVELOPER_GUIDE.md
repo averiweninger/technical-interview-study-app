@@ -1,6 +1,6 @@
 # Developer Guide
 
-Interview Compass currently contains an interactive frontend prototype and Step 3A anonymous Supabase client utilities. Progress charts and study history still use explicitly labeled mock records. There is no authentication flow, application database schema, persisted progress, AI integration, code runner, or deployment configuration.
+Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. Progress charts and study history still use explicitly labeled mock records. No application database schema, persisted learning progress, password recovery, account deletion, AI, runner, or deployment is implemented.
 
 The implementation intentionally stops before the complete Phase 1 product in [PRD.md](PRD.md). The user's frontend request permits public sample answers and local grading for demonstration. Production assessment keys must move behind authenticated server workflows before real assessments are introduced.
 
@@ -17,19 +17,56 @@ npm run dev
 
 Open the local URL printed by Next.js, normally `http://localhost:3000`.
 
-Dependencies and `package-lock.json` are present; use npm as the only package manager and `npm ci` for reproducible installation. The existing demo routes do not require provider configuration. Supabase initialization requires the public variables documented below.
+Dependencies and `package-lock.json` are present; use npm as the only package manager and `npm ci` for reproducible installation. Study routes now require a signed-in Supabase user and the public variables documented below.
 
 ### Step 3A: Supabase connection setup
 
 Keep the existing `.env.local` in the repository root. For a new checkout, copy `.env.example` to `.env.local` and replace its placeholders with the project's `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Next.js loads this file automatically. Never put a secret/service-role key in a `NEXT_PUBLIC_` variable. Publishable keys are intentionally usable in browser code; future data security still depends on grants and RLS. See the [official Supabase key guide](https://supabase.com/docs/guides/getting-started/api-keys).
 
 - `src/lib/supabase/client.ts`: lazy anonymous client factory for browser-compatible/shared code. Validates public configuration and returns fixed, redacted diagnostics.
-- `src/lib/supabase/server.ts`: `server-only` entry point returning a fresh anonymous client per call; no global server session or privileged key.
+- `src/lib/supabase/server.ts`: request-scoped, `server-only` cookie client used by Step 3B; no global server session or privileged key.
 - `npm run check:supabase`: uses Node's `--env-file` loader and verifies initialization without printing URLs, keys, or client objects. It makes no API requests and does not verify remote connectivity or permissions.
 
-Session persistence, token refresh, and URL session detection are disabled. These factories do not implement sign-in or cookie-based SSR; adopt the documented `@supabase/ssr` flow when authentication is authorized. No route uses Supabase yet, so the frontend's behavior and styling remain independent of its configuration. No tables or generated schema types are added in Step 3A.
+The stateless client used by the initialization script still disables sessions. The SSR server client now persists and refreshes user sessions as described below. No application tables or generated schema types are added in Steps 3A–3B.
 
 Verify local protection with `git check-ignore .env.local` and ensure `git ls-files .env.local` returns nothing. `.env*` is ignored; the placeholder-only `.env.example` is explicitly allowed. Do not log or commit `.env.local`.
+
+### Step 3B: Authentication and dashboard configuration
+
+`/signup` collects first name, last name, normalized email, and password. Names are stored only in Supabase Auth metadata (`first_name`, `last_name`); no profile table is created. Verified `getUser()` data supplies the displayed name/email. Older accounts fall back to existing `full_name`/`name` metadata or the neutral label “Learner.” Metadata is display data and cannot authorize access. `/login` uses Supabase's password API; passwords are never stored, hashed, or logged by the app. `/auth/callback` exchanges PKCE codes or verifies signup/email-change token hashes. All study URLs remain protected. Logout is POST-based. Study preferences remain temporary; account names persist.
+
+Settings has a separate **Account Management** section for name updates and email-change requests. Each server action validates its inputs, checks origin/rate limits, and obtains a fresh verified actor; no client-selected account ID is used. Successful name changes revalidate the workspace immediately. Current email stays visible while `new_email` awaits confirmation. Explicit `user_already_exists` signup errors may show a duplicate-account message and login link; successful/obfuscated signup responses always use neutral wording. No user directory or database lookup is made to discover accounts. A synchronous submit guard plus pending-state controls prevent duplicate signup submissions.
+
+Set server-only `APP_URL` to the exact app origin, for example `http://localhost:3000` locally or `https://your-domain.example` in production. Local development also accepts `127.0.0.1:3000` when APP_URL is unset. Production requires an explicit origin; other ports require APP_URL. No Host header or arbitrary `next` URL is used to construct email destinations.
+
+Configure these manually in the Supabase dashboard:
+
+1. **Authentication / Sign In & Providers:** enable Email/password signup and **Confirm email**. Set a password minimum of at least 8 characters; configure stronger password controls as appropriate. Do not enable anonymous sign-in or OAuth for this slice.
+2. **Authentication / URL Configuration:** set **Site URL** to APP_URL and add the exact `${APP_URL}/auth/callback` redirect URL. For local development, add the localhost/127.0.0.1 origins actually used; avoid broad production wildcards. Confirm the default confirmation email preserves the requested RedirectTo URL.
+3. **Authentication / Email Templates / Confirm signup:** the default confirmation URL supports same-browser PKCE. For links that also work on another device, use `<a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email">Confirm email</a>`. This deliberately returns to `/dashboard`; do not insert arbitrary external next URLs. Test the selected template with real delivery.
+4. **Email delivery and abuse controls:** configure production SMTP/sender details, Auth rate limits, and session/token policies. Verify expiry and refresh behavior in a development project before rollout. Hosting-level IP limits are also required before public production use.
+
+Keep **Secure email change** enabled so changes require confirmation from both the current and new inbox. Retain the default Change Email `ConfirmationURL` template for PKCE, or test a token-hash template using `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email_change`. The callback handles partial dual confirmations without claiming the address changed early, and sends completed email changes to Settings. Both flows use the same allowlisted callback origin. Do not weaken confirmation/account-enumeration settings merely to reveal duplicate registrations. Hosted delivery and both-link behavior must be verified against the actual project settings.
+
+#### Account deletion: unavailable until the backend is configured
+
+No server-only admin credential is configured in the current environment. Settings therefore shows a destructive-action warning and an explicit unavailable message, with no deletion button, form, or backend mutation. Adding a credential alone does not enable deletion. No account is deleted during tests. Requests to an unimplemented `/api/account` deletion endpoint return 404, including unauthenticated requests and forged target IDs; this is not verification of a future active deletion workflow.
+
+Before exposing deletion, implement and review all of these requirements in the existing architecture:
+
+- A protected, rate-limited server operation verifies origin, current Supabase identity, exact `DELETE` confirmation, and recent authentication or immediate Supabase reauthentication tied to the same actor. Reject arbitrary client account IDs and preserve any required MFA assurance.
+- A narrow `server-only` admin adapter uses a server secret/service-role key with Supabase's supported `auth.admin.deleteUser(actor.id)` method. Never publish that key or use it for general account/settings reads. Keep the UI disabled until confirmation and reauthentication requirements are satisfied.
+- Inventory the actual owned database/storage graph before enabling deletion. Follow DATABASE_SCHEMA.md for cancellation, dependency order, cleanup, and resumable failure handling; future progress/research/jobs must join this workflow before being enabled. Do not promise deletion of unrelated/shared curriculum.
+- Confirm the Auth deletion result and remaining owned-resource cleanup before reporting success. Preserve a minimal deletion request/tombstone outside removed data for recovery after partial failures. Clear session cookies and redirect publicly only after confirmed deletion; retry failed cleanup without resurrecting user data.
+- Document actual provider, storage, backup retention and deletion limits before release. Test fully populated synthetic accounts, wrong/absent confirmation, stale authentication, forged IDs, provider/cleanup failures, retry behavior, and isolation. Active deletion authorization/reauthentication and cleanup tests remain deferred while the backend is unavailable.
+
+Sessions use HttpOnly, SameSite=Lax cookies and Secure on HTTPS; HTTP is limited to loopback development. This slice has no browser-side authenticated SDK, so client code never reads session tokens. The proxy refreshes before rendering and preserves refreshed/cleared cookies on redirects. Proxy and protected layout use server-confirmed `getUser()` identity, not `getSession()` authorization. Responses are private/no-store. Logout clears local cookies and revokes the refresh session through Supabase; an already issued access token may remain valid until its provider-configured expiry.
+
+Security limits: the bounded in-memory auth limiter allows 10 attempts per normalized email and 60 per trusted IP/shared local bucket per 10 minutes per process. It is not a distributed serverless limit; verify Supabase and hosting limits before production. IP metadata is trusted only behind Vercel ingress. Server Actions enforce request origin, validate inputs, and cap request bodies at 16KB. Production headers block framing, unsafe base/form destinations, content-type sniffing, and referrer leakage; a complete nonce-based script CSP remains future hardening. No RLS or cross-user database isolation is claimed before tables exist.
+
+Dependency review (2026-10-21): `npm audit --omit=dev` reports no vulnerabilities. The full audit reports five high-severity package-chain findings from the existing ESLint/fast-glob/micromatch dependency on `braces` ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)); the advisory lists no patched version. This is development tooling, not a runtime auth dependency. Do not pass untrusted glob patterns to this tooling. Track the upstream fix and recheck before release; do not apply npm's suggested incompatible Next.js lint-config downgrade automatically. No exploit or production-readiness claim is made by this review.
+
+Verification uses unit mocks and a local GoTrue-shaped HTTP fixture with the actual SSR adapter, not hosted accounts. `npm run test:e2e` starts that fixture on 54329 and an isolated Next.js app on 3100 using `.next/e2e`; it never reuses the developer server or .env.local credentials. Existing learning-flow tests first sign in with synthetic accounts. Hosted signup, SMTP/template delivery, actual token revocation/refresh, dashboard configuration, production HTTPS/headers, and multi-instance limits require separate verification. Password recovery and account deletion remain planned.
 
 The manual scaffold preserves the existing repository and documents. It follows the official [Next.js installation guide](https://nextjs.org/docs/app/getting-started/installation), [Tailwind Next.js guide](https://tailwindcss.com/docs/installation/framework-guides/nextjs), and [shadcn/ui manual setup](https://ui.shadcn.com/docs/installation/manual). Next.js 16 uses asynchronous route parameters and a separate ESLint command.
 
@@ -38,37 +75,44 @@ The manual scaffold preserves the existing repository and documents. It follows 
 ```text
 src/
   app/                    Routes, metadata, shared layout, and global styles
-    dashboard/
-    career-paths/
-    learn/[topicSlug]/
-    lessons/[lessonId]/
-    practice/
-    progress/
-    settings/
+    (auth)/login/         Public sign-in and signup forms
+    (auth)/signup/
+    auth/callback/        Email confirmation handler
+    (workspace)/          Protected study pages; route group does not change URLs
+      dashboard/
+      career-paths/
+      learn/[topicSlug]/
+      lessons/[lessonId]/
+      practice/
+      progress/
+      settings/
   components/
     layout/               Sidebar, header, and mobile navigation
     learning/             Topic cards, quiz forms, feedback, activity
     charts/               Accessible study-activity display
     ui/                   Button, Card, and Progress primitives
   data/mock/              Sample curriculum, lessons, questions, progress
+  server/auth/            Verified identity, trusted origins, local burst limits
+  lib/supabase/           Stateless tooling client and cookie-aware server/proxy clients
   features/
     curriculum/           Path selection, topic filtering, content types
     practice/             Question types, local grading, practice state
     progress/             Dashboard composition
     settings/             Temporary preferences and settings form
   lib/                    Shared class-name helper
-scripts/                  Dependency-free content validation
-tests/unit/               Grading and content-integrity tests
-tests/e2e/                Learner flows, responsiveness, accessibility
+scripts/                  Content validation and redacted initialization check
+tests/unit/               Auth boundaries, grading, and content-integrity tests
+tests/e2e/                Authentication, learner flows, responsiveness, accessibility
+tests/fixtures/           Local synthetic Supabase Auth HTTP fixture
 ```
 
-There are no empty backend modules. Add `src/server/` and `supabase/` when the relevant backend work is authorized.
+`src/server/auth` contains the implemented auth boundary. Add `supabase/` only when migrations are authorized.
 
 ## Routing and layouts
 
-App Router creates a URL from folders under `src/app`. For example, `src/app/progress/page.tsx` renders `/progress`. A folder in brackets is a dynamic segment: `/learn/sql` passes `sql` as `topicSlug` to `learn/[topicSlug]/page.tsx`. Unknown topic or lesson IDs call `notFound()` and show the recovery page.
+App Router creates URLs from folders under `src/app`; route groups in parentheses do not enter the URL. For example, `src/app/(workspace)/progress/page.tsx` renders `/progress`. Bracketed folders define dynamic segments. Unknown topic or lesson IDs call `notFound()` and show the recovery page.
 
-`src/app/page.tsx` redirects `/` to `/dashboard`. `layout.tsx` wraps every page with the preference provider and application shell. Layouts stay mounted during client navigation, which lets temporary preferences survive navigation through Next.js `Link` components. A full page reload creates fresh state.
+`src/app/page.tsx` redirects `/` to `/dashboard`; unauthenticated requests are sent to `/login`. The protected workspace layout verifies the user and wraps study pages with the preference provider and shell. Layouts stay mounted during client navigation, so temporary preferences survive study links. Reload, logout, or an identity change resets this sample state. Auth pages use a separate focused layout.
 
 `loading.tsx`, `error.tsx`, and `not-found.tsx` provide route-level loading and recovery states. Filtered topic and practice screens also have empty states with reset controls. The native mobile navigation disclosure can be opened and closed by keyboard; choosing a link closes it.
 
@@ -97,7 +141,8 @@ Routes stay small and compose feature components. Shared presentation belongs in
 
 | State | Location | Lifetime |
 | --- | --- | --- |
-| Display name, selected path, study goal, explanation level, theme | `DemoPreferencesProvider` React context | Survives client navigation; resets on refresh |
+| Name and email | Supabase Auth; verified server profile passed into the provider | Persists across sessions; changes refresh the workspace |
+| Selected path, study goal, explanation level, theme | `DemoPreferencesProvider` React context | Survives client navigation; resets on refresh |
 | Unsaved settings draft | `SettingsForm` | Until leaving the settings route |
 | Search, path filter, practice filters | Feature component state | Until leaving that route |
 | Selected quiz option, feedback, written/code draft | Question component | Until changing question or leaving |
@@ -105,9 +150,9 @@ Routes stay small and compose feature components. Shared presentation belongs in
 | Lesson completion marker | `LessonCompletion` | Until leaving the lesson |
 | Dashboard/progress/history | Static fixtures | Never updated by these interactions |
 
-Only the provider shares state. There is no state-management library, localStorage, cookie, or database persistence. This makes the prototype easy to inspect and avoids presenting temporary data as saved learning evidence.
+Only the provider shares temporary study state; it has no browser-storage or database persistence. Authentication separately persists in HttpOnly cookies. Auth sessions do not make the sample progress or preferences persistent learning evidence.
 
-Profile and study settings apply on form submission. Native form constraints and explicit checks reject a blank trimmed name or invalid study minutes. The saved display name changes the greeting; the path is shared with Career Paths. Theme controls apply immediately through the provider, keeping Settings and the header synchronized. Time and explanation preferences are visibly labeled inputs for future capabilities.
+Account forms validate names and email on the server and save through Supabase Auth. Saved names update the greeting; email changes remain pending until confirmation. Study settings apply separately for the current visit and reject invalid study minutes; the path is shared with Career Paths. Theme controls apply immediately through the provider, keeping Settings and the header synchronized. Time and explanation preferences are visibly labeled inputs for future capabilities.
 
 ## How practice works
 
@@ -151,13 +196,13 @@ Current examples cover Python variables, loops, lists, SQL SELECT, SQL JOIN, and
 
 ## Styling and accessibility
 
-`globals.css` defines semantic colors and two theme palettes. Components use the same Tailwind tokens, restrained teal accent, spacing, and surfaces. The system font avoids a build-time font download. Charts include per-day text; tables have headers and captions; progress elements have accessible names. The interface includes a skip link, visible keyboard focus, native form controls, feedback status messages, and reduced-motion handling.
+`globals.css` defines the semantic palettes documented in DESIGN_SYSTEM.md. Auth and study components reuse the same muted navy accent, spacing, surfaces, and system font. Charts have per-day text; tables have headers/captions; progress elements have accessible names. Forms retain native labels, autocomplete, validation, keyboard focus, status/error announcements, and reduced-motion support.
 
-The shell uses a desktop sidebar from 768px upward and a native disclosure menu below it. Long code samples and the progress table scroll within their containers. Automated accessibility checks complement a real browser, keyboard, and screen-reader review; those checks have not yet been run in this environment.
+The shell uses a desktop sidebar from 768px upward and a native disclosure menu below it. Long code samples and the progress table scroll within their containers. Browser checks cover responsive layouts, keyboard controls, and automated accessibility; a full assistive-technology audit remains separate.
 
 ## Future integrations
 
-When authorized, introduce verified Supabase identity and data access in server use cases. Replace public demo grades with authenticated assignments, private keys, atomic grading, and the PRD mastery policy. Create migrations and generated database types rather than mapping frontend interfaces directly onto assumed tables.
+Verified Supabase identity now exists. When data integration is authorized, replace public demo grades with owned assignments, private keys, atomic grading, and the PRD mastery policy. Create migrations and generated database types rather than mapping frontend interfaces directly onto assumed tables.
 
 AI calls will belong in guarded `src/server/ai/` adapters with grounded context and budget controls. They must not be added directly to Client Components. The Tutor, Practice, Assessment, and Planner boundaries in the architecture remain ordinary application capabilities. Executable Python/SQL and Monaco remain Phase 3 work, using a managed isolated runner outside the application and production database.
 
@@ -176,7 +221,7 @@ AI calls will belong in guarded `src/server/ai/` adapters with grounded context 
 | `npm run build` | Produce a production build | Requires installed dependencies |
 | `npm start` | Serve an existing production build | Requires a successful build |
 
-The configured `typecheck`, `lint`, `test`, and `build` commands were attempted and stopped because `tsc`, `eslint`, `vitest`, and `next` were unavailable. Additional local checks parsed all 43 source/test TypeScript files with the editor's TypeScript 6.0.3, checked the dependency-free content/grading types, and exercised correct/incorrect/invalid grading and invalid content rejection with Node assertions. These checks passed but do not establish React/Next.js compatibility or browser behavior.
+The configured TypeScript, lint, unit, build, and browser checks are available with installed dependencies. Auth unit tests cover schemas, safe redirects/origins, cookie settings, limits, actions, proxy refresh, and callback failures. Browser auth checks use only the local synthetic fixture; passing them does not establish hosted email delivery or production configuration.
 
 Browser tests cover selection/filtering, lesson navigation, correct and incorrect quiz feedback, self-review, display-only code, preferences, empty/unknown routes, responsive overflow, navigation, and automated accessibility. Test files are present; their existence is not evidence of a passing run.
 
@@ -186,10 +231,10 @@ Browser tests cover selection/filtering, lesson navigation, correct and incorrec
 - **Registry `EACCES`, `ENOTCACHED`, or download errors:** allow the needed network access or install in a network-enabled environment. Offline installation works only when every required package is already cached.
 - **`next`, `eslint`, `tsc`, or `vitest` not recognized:** dependencies are not installed successfully. Finish `npm install`; do not assume application code is responsible for this error.
 - **Unsupported engine:** match the Node and npm versions in `package.json`. This project intentionally uses one package manager.
-- **Port 3000 is occupied:** run `npm run dev -- --port 3001`. E2E tests use 3000 by default; update the test configuration if needed.
+- **Port 3000 is occupied:** run `npm run dev -- --port 3001` and set `APP_URL=http://localhost:3001`. E2E uses separate ports 3100/54329 and a separate build cache.
 - **A topic has no lessons:** this is an intentional empty state. Add content in `lessons.ts` and link it to the correct topic ID.
 - **Preferences disappeared:** temporary state resets on refresh and full-page navigation. Use app links to preserve it within a visit.
 - **Quiz totals do not match the dashboard:** visit results are real temporary UI interactions; the dashboard is an independent illustrative fixture.
 - **Cannot execute a coding solution:** execution is deliberately absent. The text area is a draft editor only.
 
-The recommended next step is to finish dependency installation and run the configured verification checks, then review the frontend before authorizing a small backend slice.
+Next verify the hosted Auth/dashboard configuration manually. Application tables, RLS, persistent progress, password recovery, and deletion require their own authorized slice; Step 3 is not complete.

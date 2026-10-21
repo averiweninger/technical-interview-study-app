@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useRef, type ReactNode } from "react";
 import { ArrowUpRight, BookOpen, ChartNoAxesCombined, ChevronRight, CodeXml, Compass, LayoutDashboard, Menu, Moon, Route, Settings, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDemoPreferences } from "@/features/settings/demo-preferences";
 import { cn } from "@/lib/utils";
+import { LogoutButton } from "@/features/auth/logout-button";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -28,10 +29,11 @@ function Brand() {
 }
 
 // This boundary needs the current route and event handlers; server-rendered page content arrives as children.
-export function AppShell({ children }: { children: ReactNode; }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const confirmation = useSearchParams().get("confirmation");
   const mobileMenu = useRef<HTMLDetailsElement>(null);
-  const { preferences, updatePreferences } = useDemoPreferences();
+  const { account, preferences, updatePreferences } = useDemoPreferences();
   const currentPage = navigation.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
   const pageLabel = pathname.startsWith("/lessons/") ? "Lesson" : currentPage?.label ?? "Workspace";
 
@@ -63,10 +65,10 @@ export function AppShell({ children }: { children: ReactNode; }) {
             <Link href="/learn" className="section-link">Browse lessons <ArrowUpRight size={14} /></Link>
           </div>
           <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
-            <span className="avatar">{preferences.displayName.slice(0, 1).toUpperCase()}</span>
+            <span className="avatar">{account.displayName.slice(0, 1).toUpperCase()}</span>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">{preferences.displayName}</span>
-              <span className="text-xs text-muted-foreground">Demo learner</span>
+              <span className="block truncate text-sm font-semibold">{account.displayName}</span>
+              <span className="block truncate text-xs text-muted-foreground" title={account.email}>{account.email}</span>
             </span>
           </div>
         </div>
@@ -80,7 +82,7 @@ export function AppShell({ children }: { children: ReactNode; }) {
           </div>
           <div className="md:hidden"><Brand /></div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden text-xs text-muted-foreground sm:block">Frontend preview</span>
+            <span className="hidden text-xs text-muted-foreground sm:block">Study preview</span>
             <Button
               variant="ghost"
               size="icon"
@@ -88,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode; }) {
               onClick={() => updatePreferences({ theme: preferences.theme === "light" ? "dark" : "light" })}>
               {preferences.theme === "light" ? <Moon /> : <Sun />}
             </Button>
-            <span className="avatar hidden sm:flex" aria-label="Demo profile">{preferences.displayName.slice(0, 1).toUpperCase()}</span>
+            <LogoutButton />
           </div>
         </header>
         <details ref={mobileMenu} className="mobile-navigation md:hidden">
@@ -99,8 +101,13 @@ export function AppShell({ children }: { children: ReactNode; }) {
         </details>
         <main id="main-content" className="page-content" tabIndex={-1}>
           <div className="demo-notice">
+            <p className="mb-2 break-words md:hidden">{account.displayName} · {account.email}</p>
             <p><strong>Demo workspace.</strong> Progress and activity are sample data. Preferences and practice answers reset on refresh.</p>
           </div>
+          {(confirmation === "signup" || confirmation === "email") && <p role="status" className="feedback mt-6 text-sm">
+            {confirmation === "signup" ? "Your email has been confirmed. Welcome to your study workspace."
+              : account.pendingEmail ? "Confirmation accepted. Complete any remaining email links to finish your email change." : "Your email address has been confirmed."}
+          </p>}
           {children}
           <footer className="page-footer"><span>Interview Compass</span><span>Educational preview · sample data</span></footer>
         </main>

@@ -2,7 +2,7 @@
 
 ## Current project state and authorization
 
-This repository now contains an authorized frontend prototype, the original planning documents, and a developer guide. At initial inspection on 2026-10-21 it contained only Git metadata; that observation is historical. The later frontend request authorizes Next.js, sample content, local quiz feedback, temporary preferences, and mock analytics only. It explicitly excludes backend integrations, authentication, OpenAI, executable practice, deployment, commits, and pushes. Do not report the complete Phase 1 MVP as implemented.
+This repository contains the frontend prototype, Supabase connection utilities (Step 3A), and email/password authentication (Step 3B). The user explicitly authorized these small slices after the initial planning handoff. Study content, quiz feedback, preferences, and analytics remain public samples or temporary state; no application tables or persistent learning evidence exist. OpenAI, executable practice, deployment, and further backend features remain outside this authorization. Do not report the complete Phase 1 MVP as implemented.
 
 Initial dependency installation was blocked; a later frontend inspection found installed dependencies and an npm lockfile. Verify current tooling and actual check results for each task rather than carrying forward historical setup blockers. Public sample answers and browser grading are intentional prototype exceptions, never a design for production assessment security.
 
@@ -118,3 +118,13 @@ For UI changes inspect representative desktop/mobile layouts, keyboard navigatio
 5. Review the diff for accidental secrets, generated clutter, unrelated changes, and mismatched docs. Summarize what changed, why, how it was verified, and any material remaining risk. Do not commit, push, provision services, deploy, or message others without the relevant user authorization.
 
 Use concise PR descriptions led by the concrete problem and resulting behavior, with acceptance IDs and actual validation. Distinguish mock fixtures from real provider checks. For staged rollout document migration compatibility, recovery, feature flags/kill switches, and observable success criteria. Do not imply that rolling back frontend code rolls back the database.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

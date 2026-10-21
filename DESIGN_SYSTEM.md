@@ -58,6 +58,7 @@ Controls use a 6px radius (`--radius-control`); panels use 8px (`--radius-panel`
 - **Practice:** one dominant question panel with topic/format controls and a secondary visit summary. Keep answers and previous/next navigation together. Code exercises remain display-only.
 - **Analytics:** a shared metric strip, labeled table, and the existing study-activity chart. Use the same single-color scale and units across Dashboard and Progress. Label sample data explicitly.
 - **Settings:** a limited-width form with profile, study, and appearance sections. Keep labels above fields and feedback close to the submit action.
+- **Authentication:** a narrow single-column form on a white surface, separate from the study sidebar. Reuse fields/buttons, explicit labels and autocomplete, inline validation, announced errors, and a disabled submit state while pending. Keep email-confirmation guidance and sign-in links clear.
 
 ## Component styling and interactive states
 

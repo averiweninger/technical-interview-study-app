@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { AppShell } from "@/components/layout/app-shell";
-import { DemoPreferencesProvider } from "@/features/settings/demo-preferences";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Interview Compass", template: "%s | Interview Compass" },
-  description: "An interactive frontend preview for thoughtful technical interview preparation. Sample data; no accounts or AI services connected.",
+  description: "A technical interview study workspace with email sign-in and educational sample lessons and practice.",
 };
 
-// App Router layouts persist between navigations. This keeps temporary preferences in memory.
-// The layout and pages are Server Components; only the provider and interactive shell need the browser.
+// The protected route group owns the workspace shell; public auth pages use a focused layout.
 export default function RootLayout({ children }: { children: ReactNode; }) {
-  return <html lang="en"><body><DemoPreferencesProvider><AppShell>{children}</AppShell></DemoPreferencesProvider></body></html>;
+  return <html lang="en"><body className="bg-background text-foreground">{children}</body></html>;
 }

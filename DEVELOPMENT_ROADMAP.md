@@ -1,6 +1,6 @@
 # Development roadmap
 
-Status: proposed full-product roadmap, 2026-10-21. The frontend foundation and design system exist with installed dependencies and an npm lockfile. Step 3A adds anonymous Supabase client utilities and a redacted local initialization check only. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. Authentication, tables/migrations, persistent learning evidence, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
+Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, design system, Step 3A connection utilities, and Step 3B email/password authentication flow exist. Step 3B includes cookie session refresh, server-side route checks, logout, and email confirmation; hosted email delivery and dashboard configuration still require verification. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. Application tables/migrations, persistent learning evidence, password recovery, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
 
 ## Delivery strategy and implementation sequence
 

@@ -1,6 +1,6 @@
 # Product requirements
 
-Status: proposed full-product requirements, 2026-10-21. A later user-authorized frontend prototype now exists in source; installation/runtime verification are pending. It demonstrates portions of ONB-01, LIB-01, LES-01, QUIZ-01, PROG-01, and HIST-01 using public samples and temporary state. It does not satisfy their persistence, security, content-publication, or mastery acceptance criteria. Authentication, database, tutor, and deletion remain unimplemented. See README.md for the current frontend scope; the phase requirements below remain the full-product plan.
+Status: proposed full-product requirements, 2026-10-21. The frontend prototype demonstrates portions of ONB-01, LIB-01, LES-01, QUIZ-01, PROG-01, and HIST-01 using public samples and temporary state. Step 3B implements email/password authentication, confirmation, session refresh/logout, and protected routes, but AUTH-01 remains incomplete pending password recovery and hosted configuration/security verification. No application tables, persisted learning evidence, tutor, or account deletion exist. See README.md for implemented scope; the acceptance criteria below remain the full-product plan.
 
 ## Problem and product outcome
 

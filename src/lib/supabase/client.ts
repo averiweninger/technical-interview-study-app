@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-/** Creates an anonymous client using only the project's public configuration. */
-export function createSupabaseClient() {
+/** Reads public configuration without logging environment values. Shared by both client factories. */
+export function getSupabaseConfig() {
   // Keep direct env references so Next.js can inline these public values in browser builds.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -30,8 +30,12 @@ export function createSupabaseClient() {
     throw new Error("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY must contain a Supabase publishable key.");
   }
 
-  // Step 3A has no auth flow: do not read/store sessions, refresh tokens, or consume URL grants.
-  // Construct lazily so the existing demo remains usable without Supabase configuration.
+  return { url, publishableKey };
+}
+
+/** Stateless public client for tooling. User sessions use the server-only SSR factory instead. */
+export function createSupabaseClient() {
+  const { url, publishableKey } = getSupabaseConfig();
   return createClient(url, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
