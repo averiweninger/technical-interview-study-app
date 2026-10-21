@@ -1,6 +1,8 @@
 # Technical architecture
 
-Status: proposed, 2026-10-21. The inspected repository contained only `.git`, no tracked files, dependency manifests, source, tests, or commits. This document describes a future system. The five root planning documents are the only deliverable of this task.
+Status: proposed full-system architecture, 2026-10-21. The initial empty-repository inspection is historical. A later authorized frontend foundation now uses Next.js App Router, typed fixtures in `src/data/mock`, shared components, and small client feature modules. One React context shares temporary preferences; other state stays local. Current routes are `/dashboard`, `/career-paths`, `/learn`, `/learn/[topicSlug]`, `/lessons/[lessonId]`, `/practice`, `/progress`, and `/settings`. `/` redirects to the dashboard.
+
+The frontend uses public demonstration answers and local feedback, not private assessment keys or the production grading/mastery flow below. There are no server use cases, API integrations, database migrations, AI calls, or execution services yet. Dependency installation and runtime verification are pending; see DEVELOPER_GUIDE.md. The original proposed structure below remains a guide for later authorized features, not an inventory of existing directories.
 
 ## Decisions and boundaries
 

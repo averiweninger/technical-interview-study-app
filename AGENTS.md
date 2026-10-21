@@ -2,7 +2,9 @@
 
 ## Current project state and authorization
 
-This repository is in the planning stage. At initial inspection on 2026-10-21 it contained only Git metadata, with no source files, dependency manifest, test suite, integrations, or commits. The initial task adds five planning documents only. Do not report planned functionality as implemented.
+This repository now contains an authorized frontend prototype, the original planning documents, and a developer guide. At initial inspection on 2026-10-21 it contained only Git metadata; that observation is historical. The later frontend request authorizes Next.js, sample content, local quiz feedback, temporary preferences, and mock analytics only. It explicitly excludes backend integrations, authentication, OpenAI, executable practice, deployment, commits, and pushes. Do not report the complete Phase 1 MVP as implemented.
+
+Dependency installation was blocked by declined registry access, and the offline cache lacked packages. No lockfile has been generated. Read README.md and DEVELOPER_GUIDE.md for current setup and verification status; complete installation, pin resolved dependency versions, and generate/review the npm lockfile before claiming a runnable application. Public sample answers and browser grading are intentional prototype exceptions, never a design for production assessment security.
 
 **Wait for the user's approval before beginning Phase 1 implementation.** This is the user's explicit instruction for the planning handoff, not a requirement to ask again on every task. Once the user authorizes Phase 1 or a particular action, proceed within that authorization without redundant approval questions. Later explicit user instructions take precedence over this file. Do not assume authorization to provision paid services, deploy to production, or start later phases from approval of a code change alone.
 

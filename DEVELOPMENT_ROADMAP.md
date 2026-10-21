@@ -1,6 +1,6 @@
 # Development roadmap
 
-Status: proposed, 2026-10-21. Repository inspection found only Git metadata, with no application, installed dependency manifest, tests, integrations, or commits. This planning task creates five Markdown documents only. No feature or integration is marked complete. Obtain user approval before starting Phase 1.
+Status: proposed full-product roadmap, 2026-10-21. The original empty-repository observation is historical. The user subsequently authorized a frontend-only foundation: navigation, sample curriculum, local quizzes/self-review, illustrative analytics, temporary settings, and developer documentation. That source now exists, with installation/runtime verification blocked by dependency access. This is partial foundation work, not completion of P1-A or a Phase 1 exit gate. Backend/auth/AI, the reviewed launch bank, persistent learning evidence, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for actual commands and verification status.
 
 ## Delivery strategy
 

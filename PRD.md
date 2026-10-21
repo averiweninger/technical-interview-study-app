@@ -1,6 +1,6 @@
 # Product requirements
 
-Status: proposed plan, 2026-10-21. No application features have been implemented. Phase 1 implementation requires the user's approval after this planning handoff.
+Status: proposed full-product requirements, 2026-10-21. A later user-authorized frontend prototype now exists in source; installation/runtime verification are pending. It demonstrates portions of ONB-01, LIB-01, LES-01, QUIZ-01, PROG-01, and HIST-01 using public samples and temporary state. It does not satisfy their persistence, security, content-publication, or mastery acceptance criteria. Authentication, database, tutor, and deletion remain unimplemented. See README.md for the current frontend scope; the phase requirements below remain the full-product plan.
 
 ## Problem and product outcome
 

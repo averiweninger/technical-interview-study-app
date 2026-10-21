@@ -1,8 +1,24 @@
 # Interview Compass
 
-Interview Compass is a planned AI-powered adaptive learning platform designed to help students and professionals prepare for technical interviews. It will connect reviewed lessons, guided practice, AI tutoring, and performance tracking in a preparation experience tailored to each learner's career goals.
+Interview Compass is an AI-powered adaptive learning platform in development, designed to help students and professionals prepare for technical interviews. The current frontend prototype connects educational sample lessons, interactive practice, and illustrative progress displays. The long-term plan adds grounded AI tutoring and evidence-based personalization.
 
-**Status:** Initial planning and development stage. The repository currently contains project documentation only. No application features or integrations are implemented, and the application is not runnable.
+**Status:** Initial development stage with frontend source implemented. Dependency installation and runtime verification are pending because registry access was declined during this session. No database, authentication, OpenAI integration, code execution, or deployment is configured. This is not the complete Phase 1 MVP.
+
+## Frontend Prototype
+
+| Page | Implemented in source |
+| --- | --- |
+| Dashboard | Welcome, sample study statistics, topic cards, activity, and an illustrative review queue |
+| Career Paths | Six selectable paths, associated topics, and temporary selection shared with Settings |
+| Study Topics | Search, path filtering, topic details, real sample lesson counts, and useful empty states |
+| Lessons | Six substantive lessons, code examples, objectives, knowledge checks, and previous/next navigation |
+| Practice | Multiple-choice feedback, conceptual self-review, and display-only Python/SQL exercise drafts |
+| Progress | Clearly labeled sample completion, accuracy, mastery labels, activity, and topic comparisons |
+| Settings | Temporary profile, career path, study preferences, and light/dark theme |
+
+Navigation, filters, answer feedback, and preferences use React state. Preferences survive client navigation and reset on refresh. Quiz drafts and lesson markers reset when leaving their question or lesson. Dashboard statistics and mastery labels remain fictional fixtures and never represent the visitor's answers.
+
+The sample library includes eight topic categories and six lessons covering Python variables, loops, lists, SQL SELECT, SQL JOIN, and Big O. Other categories show an honest empty state. All thirteen practice questions and their answers are public demonstration content; local quiz feedback is not secure server grading. Coding drafts are never executed.
 
 ## Project Purpose
 
@@ -19,7 +35,7 @@ Performance estimates will show evidence limits. They are intended to guide prep
 
 ## Planned Features
 
-Every feature below is planned and has not yet been implemented.
+The table below describes the full product roadmap. The frontend samples above demonstrate parts of the interface; they do not fulfill the complete backend, content-review, persistence, or security requirements.
 
 | Feature | Planned scope | Phase |
 | --- | --- | --- |
@@ -45,7 +61,7 @@ This is shared foundational coverage. Phase 1 Python and SQL preparation will us
 
 ## Planned Technology Stack
 
-These are design choices, not installed dependencies or configured integrations. Supported versions, the runtime, package manager, and lockfile will be selected and pinned during approved scaffolding.
+The frontend manifest configures Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned; dependency installation and lockfile generation are pending. Supabase, OpenAI, Monaco, the runner, and hosting remain future integrations.
 
 | Technology | Intended role |
 | --- | --- |
@@ -91,11 +107,11 @@ Only eligible independently graded answers will contribute to objective mastery 
 
 ## Development Roadmap
 
-All three phases are planned; implementation has not started. Phase 1 requires explicit user approval before scaffolding or dependency installation.
+The authorized frontend foundation is implemented in source, with installation and runtime verification pending. The three full product phases below remain incomplete. Backend services and later capabilities require their own authorized development scope.
 
 | Phase | Planned deliverable | Status |
 | --- | --- | --- |
-| **1 — Functional MVP** | Authentication, path selection and optional interview date, minimum reviewed curriculum, single-choice quizzes, text tutor with cost controls, basic dashboard/history, settings, and conversation/account deletion | Planned; awaiting implementation approval |
+| **1 — Functional MVP** | Authentication, path selection and optional interview date, minimum reviewed curriculum, single-choice quizzes, text tutor with cost controls, basic dashboard/history, settings, and conversation/account deletion | Frontend prototype in source; complete MVP remains planned |
 | **2 — Adaptive Learning** | Diagnostics, capacity-aware study plans, optional job description analysis, adaptive difficulty, spaced repetition, expanded analytics, and reviewed AI draft tooling | Planned; follows a stable Phase 1 |
 | **3 — Advanced Interview Preparation** | Monaco-based Python/SQL practice with managed isolation, timed mocks, text interview simulations, and advanced reports | Planned; follows Phase 2 and runner verification |
 
@@ -103,9 +119,31 @@ Phase gates will require evidence from behavior, security, content, accessibilit
 
 ## Getting Started
 
-The repository has not been initialized as an application. It currently has no source code, dependency manifest, lockfile, database migrations, test suite, or runnable development commands. Provider integrations and deployment setup are planned.
+Use **Node.js 24.22.1** and **npm 11.19.1**. No environment variables, provider accounts, or credentials are required for the frontend.
 
-To explore the project now, start with the documents below. After Phase 1 is authorized and scaffolding is complete, this section will be updated with verified prerequisites, installation commands, environment variable placeholders, local database setup, and actual development, test, and build commands.
+```bash
+npm install
+npm run dev
+```
+
+Open the URL printed by Next.js, normally `http://localhost:3000`. The root route opens the dashboard.
+
+**Setup limitation:** Installation could not complete in this session: npm registry access was declined, and the required packages were absent from the offline cache. No lockfile was fabricated. The first successful `npm install` must generate a reviewed `package-lock.json`; pin the resolved direct dependency versions then. Afterward, use `npm ci`. Until installation succeeds, the frontend cannot be claimed to build or run successfully.
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Local development server |
+| `npm run typecheck` | Strict TypeScript checks |
+| `npm run lint` | ESLint checks |
+| `npm run test:content` | Dependency-free fixture integrity checks with Node 24 |
+| `npm test` | Vitest grading and content-integrity tests |
+| `npm run test:e2e` | Playwright learner flows and accessibility checks; requires Chromium |
+| `npm run build` | Production build |
+| `npm start` | Serve an existing production build |
+
+After dependencies are available, install the test browser with `npx playwright install chromium`. Content validation passed during implementation. Full typecheck, lint, unit tests, production build, and browser verification remain blocked by dependency installation.
+
+See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for the folder structure, state flow, quiz logic, content-editing instructions, verification limits, and troubleshooting.
 
 | Document | Contents |
 | --- | --- |
