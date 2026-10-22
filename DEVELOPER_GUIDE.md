@@ -91,6 +91,40 @@ Profile bootstrap/backfill and every persistence use case remain separate work. 
 
 **Rollback:** failure before `COMMIT` rolls back the migration transaction. After successful application, prefer retaining the unused schema and a reviewed forward correction. For an unwanted disposable-local installation, recreate the local database from the previous source revision, acknowledging loss of local test data. Shared environments require backup and a separately reviewed reverse migration that removes only this migration's objects in dependency order; never drop `auth.users`, the Auth schema, or an existing private schema. `migration repair` changes history and is not a database rollback. Do not edit an already-applied migration. Namespace creation and catalog seed inserts are idempotent where appropriate; the complete migration is applied once through migration history.
 
+### Step 3C-2: Review and application handoff
+
+Review status: the Step 3C-1 migration exists and covers its staged scope. Static review found RLS on all ten tables, owner predicates using `auth.uid()`, restricted profile-column grants, protected server-written evidence, indexed foreign keys, and same-owner session references. Lexical/structural checks, SQL documentation links, and `git diff --check` passed; these are not PostgreSQL execution or SQL parser checks. No migration SQL was changed by this review. **Nothing has been applied or runtime-verified.** PostgreSQL/`psql`, the Supabase CLI, and Docker are unavailable in this workspace. This review does not complete AUTH-01's hosted isolation requirement.
+
+Two metadata-only SQL files support the handoff:
+
+| File | When to run | Purpose |
+| --- | --- | --- |
+| [learning_records_preflight.sql](supabase/tests/learning_records_preflight.sql) | Before application, in the intended project's SQL Editor | Confirm Auth/roles and reject conflicting public objects or an existing private schema. |
+| [learning_records_security_audit.sql](supabase/tests/learning_records_security_audit.sql) | After application, in the same project's SQL Editor | Assert table/RLS/API grant configuration and list policies, constraints, and indexes for review. |
+
+Both use read-only transactions and select no user records or secrets. Preflight deliberately stops on an existing `private` schema: the migration revokes its API usage, which could affect unrelated objects. Do not drop that schema or bypass the error; review its ownership, objects, and grants first. Review existing migration history separately; a passed preflight does not establish project identity or authorization. If a query fails, stop rather than changing existing records to make it pass.
+
+**Safest hosted application sequence:**
+
+1. First complete the disposable-local migration, lint, and transactional SQL tests above. Use a development/staging project before any project containing real users. Confirm the dashboard project reference and available backup/recovery procedure.
+2. In that project's **SQL Editor**, run the complete preflight file. Review any collisions and existing migration history. Under the project's Data API settings, keep `private` out of exposed schemas; do not change Auth settings for this migration.
+3. Obtain explicit approval for this exact migration and target. Then, with a supported standalone CLI installed/configured, use the [official migration workflow](https://supabase.com/docs/guides/deployment/database-migrations):
+
+   ```powershell
+   supabase login
+   supabase link --project-ref <confirmed-development-project-reference>
+   supabase migration list --linked
+   supabase db push --linked --dry-run
+   # Run ONLY after explicit approval and review of the dry run:
+   supabase db push --linked
+   ```
+
+   The dry run must show only `20261021200000_prepare_learning_records.sql` pending. Stop on other migrations or history mismatches. Use interactive credential entry, never command-line passwords or secrets pasted into chat. Linking requires `supabase/config.toml`; initialize it with `supabase init` if still absent. No CLI setup, link, or push was performed here. Prefer the CLI's migration history over manually pasting DDL into SQL Editor; if it was already applied manually, stop and reconcile history after checking the schema, rather than applying twice or blindly marking it applied.
+4. Run the complete read-only security audit in SQL Editor. Expect seven owner policies: three on profiles (SELECT/INSERT/UPDATE), one SELECT policy on each other owned table, and none on catalog tables. Check `USING`/`WITH CHECK` owner predicates and validated constraints against the migration. A dashboard SQL query runs with privileged access and does **not** prove learner isolation.
+5. Before declaring Step 3C-2 verified, test the actual Data API in a separate disposable Supabase environment using two isolated Auth accounts created through supported signup, their own session tokens, and the public publishable/anon key. Use a controlled owner connection only to seed those accounts' profiles/activity. Never test RLS with a service-role bearer token. Test A against B and B against A: reads return no foreign records; profile updates affect no foreign rows; foreign inserts fail; all activity writes and all raw-attempt reads fail; owner-ID transfers and anonymous CRUD fail. Confirm allowed own-profile insertion/update and own safe reads succeed. Failed DELETE requests must leave fixtures intact. Record status codes, affected-row counts, and owner-side before/after checks, without logging tokens or private data.
+
+The expanded [transactional SQL suite](supabase/tests/learning_records.sql) also covers explicit foreign inserts, updates, and deletes. It simulates database roles/claims, not hosted Auth sessions. **Never run that fixture script on the live project:** it inserts synthetic Auth rows and exercises deletion, despite ultimately rolling back. Hosted safe-account tests, SQL execution, and generated database types remain pending. Existing authentication needs no table trigger/backfill; profile bootstrap and all progress integration remain deferred. No frontend, credentials, or existing database records were changed.
+
 ## Folder structure
 
 ```text

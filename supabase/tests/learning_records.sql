@@ -58,7 +58,41 @@ begin
     delete from public.profiles where id = 'a0000000-0000-4000-8000-000000000001';
     raise exception 'Learner profile deletion allowed';
   exception when insufficient_privilege then null; end;
+  -- Valid payloads owned by B: a missing required field must not be the reason access fails.
+  begin
+    insert into public.lesson_progress(user_id, lesson_id, lesson_version_id)
+      values ('b0000000-0000-4000-8000-000000000002', '635113f0-0b64-50ae-906f-bab6677b34d1', 'be82acca-d29b-5ccb-95bf-88114d5974cc');
+    raise exception 'Foreign lesson progress insert allowed';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.study_sessions(user_id, kind) values ('b0000000-0000-4000-8000-000000000002', 'lesson');
+    raise exception 'Foreign study session insert allowed';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.question_attempts(user_id, question_id, question_version_id, assignment_key)
+      values ('b0000000-0000-4000-8000-000000000002', 'd6946209-76b6-59b4-beff-8c0a6251fda9', 'bad65157-3d32-562e-9981-810904d238f7', gen_random_uuid());
+    raise exception 'Foreign question attempt insert allowed';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.user_topic_mastery(user_id, topic_id, algorithm_version, alpha, beta,
+      estimate, eligible_attempt_count, distinct_question_count, distinct_evidence_days)
+      values ('b0000000-0000-4000-8000-000000000002', 'c623902c-3c20-53b3-bd2f-c1f04a0d44a6', 'test-unassessed', 1, 1, 0.5, 0, 0, 0);
+    raise exception 'Foreign mastery insert allowed';
+  exception when insufficient_privilege then null; end;
+  foreach relation_name in array array['profiles', 'lesson_progress', 'study_sessions', 'question_attempts', 'user_topic_mastery'] loop
+    begin
+      execute format('delete from public.%I where %I = $1', relation_name,
+        case when relation_name = 'profiles' then 'id' else 'user_id' end)
+        using 'b0000000-0000-4000-8000-000000000002'::uuid;
+      raise exception 'Foreign delete allowed: %', relation_name;
+    exception when insufficient_privilege then null; end;
+  end loop;
   foreach relation_name in array array['lesson_progress', 'study_sessions', 'question_attempts', 'user_topic_mastery'] loop
+    begin
+      execute format('update public.%I set user_id = $1 where user_id = $1', relation_name)
+        using 'b0000000-0000-4000-8000-000000000002'::uuid;
+      raise exception 'Foreign update allowed: %', relation_name;
+    exception when insufficient_privilege then null; end;
     begin
       execute format('insert into public.%I(user_id) values ($1)', relation_name)
         using 'a0000000-0000-4000-8000-000000000001'::uuid;
