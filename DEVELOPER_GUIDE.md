@@ -1,6 +1,6 @@
 # Developer Guide
 
-Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. Step 3C-1 prepares an unapplied database migration and local SQL checks. Progress charts and study history still use explicitly labeled mock records. No application database changes have been executed; persisted learning progress, password recovery, account deletion, AI, runner, and deployment remain unimplemented.
+Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. The user reports successful application of the Step 3C-1 database migration and its read-only audit; independent two-account Data API isolation verification remains pending. Progress charts and study history still use explicitly labeled mock records. Persisted learning progress integration, password recovery, account deletion, AI, runner, and deployment remain unimplemented.
 
 The implementation intentionally stops before the complete Phase 1 product in [PRD.md](PRD.md). The user's frontend request permits public sample answers and local grading for demonstration. Production assessment keys must move behind authenticated server workflows before real assessments are introduced.
 
@@ -72,7 +72,7 @@ The manual scaffold preserves the existing repository and documents. It follows 
 
 ### Step 3C-1: Prepared database migration
 
-[20261021200000_prepare_learning_records.sql](supabase/migrations/20261021200000_prepare_learning_records.sql) and [learning_records.sql](supabase/tests/learning_records.sql) are **prepared, not executed**. The exact staged schema and access rules are in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md#prepared-step-3c-1-subset). The app still uses mock progress; Auth/settings code is unchanged. No CLI, database packages, containers, or generated types were installed/created by this step.
+[20261021200000_prepare_learning_records.sql](supabase/migrations/20261021200000_prepare_learning_records.sql) and [learning_records.sql](supabase/tests/learning_records.sql) were **prepared, not executed by Step 3C-1**. See Step 3C-2 below for the subsequent user-reported application. The exact staged schema and access rules are in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md#prepared-step-3c-1-subset). The app still uses mock progress; Auth/settings code is unchanged. No CLI, database packages, containers, or generated types were installed/created by that preparation step.
 
 **Apply locally later:** first review the SQL and target inventory. This initial migration intentionally fails if its tables/functions already exist; do not hide collisions with `IF NOT EXISTS`. With a supported standalone Supabase CLI, Docker, and `psql` available, follow the [official local migration workflow](https://supabase.com/docs/guides/local-development/database-migrations) in a disposable, unlinked local project. Run `supabase init` only if `supabase/config.toml` is absent, then `supabase start` (initial startup can already apply migrations). Apply any remaining migrations and inspect SQL with:
 
@@ -93,7 +93,7 @@ Profile bootstrap/backfill and every persistence use case remain separate work. 
 
 ### Step 3C-2: Review and application handoff
 
-Review status: the Step 3C-1 migration exists and covers its staged scope. Static review found RLS on all ten tables, owner predicates using `auth.uid()`, restricted profile-column grants, protected server-written evidence, indexed foreign keys, and same-owner session references. Lexical/structural checks, SQL documentation links, and `git diff --check` passed; these are not PostgreSQL execution or SQL parser checks. No migration SQL was changed by this review. **Nothing has been applied or runtime-verified.** PostgreSQL/`psql`, the Supabase CLI, and Docker are unavailable in this workspace. This review does not complete AUTH-01's hosted isolation requirement.
+Review status: the user reports that the Step 3C-1 migration and read-only security audit succeeded on their Supabase project. This hosted result has not been independently observed here; the preparation-only statements above describe the earlier handoff. Do not reapply the migration or rerun preflight against the installed schema. Static review found RLS on all ten tables, owner predicates using `auth.uid()`, restricted profile-column grants, protected server-written evidence, indexed foreign keys, and same-owner session references. Lexical/structural checks, SQL documentation links, and `git diff --check` passed; these are not PostgreSQL execution or SQL parser checks. No migration SQL was changed by this review. **Authenticated Data API isolation remains unverified.** This does not complete AUTH-01's hosted isolation requirement.
 
 Two metadata-only SQL files support the handoff:
 
@@ -123,7 +123,163 @@ Both use read-only transactions and select no user records or secrets. Preflight
 4. Run the complete read-only security audit in SQL Editor. Expect seven owner policies: three on profiles (SELECT/INSERT/UPDATE), one SELECT policy on each other owned table, and none on catalog tables. Check `USING`/`WITH CHECK` owner predicates and validated constraints against the migration. A dashboard SQL query runs with privileged access and does **not** prove learner isolation.
 5. Before declaring Step 3C-2 verified, test the actual Data API in a separate disposable Supabase environment using two isolated Auth accounts created through supported signup, their own session tokens, and the public publishable/anon key. Use a controlled owner connection only to seed those accounts' profiles/activity. Never test RLS with a service-role bearer token. Test A against B and B against A: reads return no foreign records; profile updates affect no foreign rows; foreign inserts fail; all activity writes and all raw-attempt reads fail; owner-ID transfers and anonymous CRUD fail. Confirm allowed own-profile insertion/update and own safe reads succeed. Failed DELETE requests must leave fixtures intact. Record status codes, affected-row counts, and owner-side before/after checks, without logging tokens or private data.
 
-The expanded [transactional SQL suite](supabase/tests/learning_records.sql) also covers explicit foreign inserts, updates, and deletes. It simulates database roles/claims, not hosted Auth sessions. **Never run that fixture script on the live project:** it inserts synthetic Auth rows and exercises deletion, despite ultimately rolling back. Hosted safe-account tests, SQL execution, and generated database types remain pending. Existing authentication needs no table trigger/backfill; profile bootstrap and all progress integration remain deferred. No frontend, credentials, or existing database records were changed.
+The expanded [transactional SQL suite](supabase/tests/learning_records.sql) also covers explicit foreign inserts, updates, and deletes. It simulates database roles/claims, not hosted Auth sessions. **Never run that fixture script on the live project:** it inserts synthetic Auth rows and exercises deletion, despite ultimately rolling back. Hosted safe-account isolation tests and generated database types remain pending. Existing authentication needs no table trigger/backfill; profile bootstrap and all progress integration remain deferred. No frontend, credentials, or existing database records were changed here.
+
+### Step 3C-2: Two-account isolation procedure
+
+Run this procedure only in a **disposable development/staging Supabase project** with the same migration and a successful read-only audit. Do not run its write probes on production: an access-control defect could make an expected denial succeed. The procedure targets only two newly created test identities, never existing learners. It adds no packages, changes no schema, and uses the installed Supabase JavaScript SDK. It does not run `learning_records.sql`, delete Auth accounts, or automatically clean up records.
+
+1. In that disposable project's **Authentication > Users**, create two new confirmed email/password test accounts, A and B, with distinct emails. Use a supported signup/dashboard flow; do not insert into `auth.users` manually. Keep passwords local. Copy their UUIDs privately from the dashboard.
+2. In the same project's **SQL Editor**, replace the two UUID placeholders below and run the complete block once. It refuses identities with existing profiles; no upserts, backfills, updates, or deletes are used. If it fails, stop; use fresh test accounts rather than changing existing records. It creates exactly one record per owned table per test account so empty-table reads cannot produce a false pass.
+
+   ```sql
+   begin;
+   do $$
+   declare
+     account_a uuid := '9d652f11-ce18-4f4e-aac1-ed0800b576bd';
+     account_b uuid := '6cfc9893-2f01-4625-907f-2b8797e833e3';
+     account_id uuid;
+     session_id uuid;
+   begin
+     if account_a = account_b or
+       (select count(*) from auth.users where id in (account_a, account_b)) <> 2 or
+       exists (select 1 from public.profiles where id in (account_a, account_b)) then
+       raise exception 'Two distinct fresh Auth test accounts without profiles are required';
+     end if;
+     foreach account_id in array array[account_a, account_b] loop
+       insert into public.profiles(id, display_name) values (account_id, 'Isolation check');
+       insert into public.lesson_progress(user_id, lesson_id, lesson_version_id)
+         values (account_id, 'b967d196-6dea-55c9-a35c-cbbd82b654b9', '3de4e9ff-3252-56ac-89ee-4a5be72ebfab');
+       insert into public.study_sessions(user_id, kind) values (account_id, 'practice') returning id into session_id;
+       insert into public.question_attempts(user_id, question_id, question_version_id, study_session_id, assignment_key)
+         values (account_id, 'd6946209-76b6-59b4-beff-8c0a6251fda9', 'bad65157-3d32-562e-9981-810904d238f7', session_id, gen_random_uuid());
+       insert into public.user_topic_mastery(user_id, topic_id, algorithm_version, alpha, beta, estimate,
+         eligible_attempt_count, distinct_question_count, distinct_evidence_days)
+         values (account_id, 'd1fbfb4b-c7ba-5fa1-87b3-9ace0a559467', 'isolation-test', 1, 1, 0.5, 0, 0, 0);
+     end loop;
+   end;
+   $$;
+   commit;
+   ```
+
+3. Capture a baseline in SQL Editor using the query below with those same UUIDs. Keep the result locally; each table should show `record_count = 2`. Run this identical query again after the probes and compare every count and fingerprint. It selects only the dedicated test identities. **Unchanged fingerprints are required**, including attempts, which learners cannot read directly.
+
+   ```sql
+   with test_ids(id) as (values ('9d652f11-ce18-4f4e-aac1-ed0800b576bd'::uuid), ('6cfc9893-2f01-4625-907f-2b8797e833e3'::uuid)),
+   records(table_name, value) as (
+     select 'profiles', to_jsonb(r)::text from public.profiles r join test_ids t on t.id = r.id
+     union all select 'lesson_progress', to_jsonb(r)::text from public.lesson_progress r join test_ids t on t.id = r.user_id
+     union all select 'study_sessions', to_jsonb(r)::text from public.study_sessions r join test_ids t on t.id = r.user_id
+     union all select 'question_attempts', to_jsonb(r)::text from public.question_attempts r join test_ids t on t.id = r.user_id
+     union all select 'user_topic_mastery', to_jsonb(r)::text from public.user_topic_mastery r join test_ids t on t.id = r.user_id
+   )
+   select table_name, count(*) as record_count, md5(string_agg(value, E'\n' order by value)) as fingerprint
+   from records group by table_name order by table_name;
+   ```
+
+4. Create an ignored `.env.isolation.local` in the repository root containing only the disposable project's `NEXT_PUBLIC_SUPABASE_URL` and **publishable** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Leave the application's `.env.local` unchanged. Confirm `git check-ignore .env.isolation.local` lists this file. Do not use a secret/service-role key. In PowerShell at the repository root, run the following complete block. Enter credentials only at the prompts; passwords are hidden, temporarily passed to the local Node process, and removed from the shell environment in `finally`. Do not run with shell tracing/transcripts enabled or paste credentials/results containing private data into chat.
+
+   ```powershell
+   if ((Read-Host 'Type DISPOSABLE to confirm this is a disposable test project') -cne 'DISPOSABLE') { throw 'Stopped' }
+   $isolationVariables = @('ISOLATION_PROJECT_REF', 'ISOLATION_A_EMAIL', 'ISOLATION_A_PASSWORD', 'ISOLATION_B_EMAIL', 'ISOLATION_B_PASSWORD')
+   try {
+     $env:ISOLATION_PROJECT_REF = Read-Host 'Disposable project reference (from its dashboard)'
+     foreach ($label in @('A', 'B')) {
+       [Environment]::SetEnvironmentVariable("ISOLATION_${label}_EMAIL", (Read-Host "Test $label email"), 'Process')
+       $isolationPassword = Read-Host "Test $label password" -AsSecureString
+       [Environment]::SetEnvironmentVariable("ISOLATION_${label}_PASSWORD", ([System.Net.NetworkCredential]::new('', $isolationPassword).Password), 'Process')
+       $isolationPassword.Dispose()
+     }
+   @'
+   import { createClient } from '@supabase/supabase-js';
+   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+   const check = (condition, label) => { if (!condition) throw new Error(label); };
+   const clients = [];
+   const denied = async (request, label) => {
+     const result = await request;
+     // Constraint, network, token, and missing-table errors are not proof of authorization.
+     check(result.error?.code === '42501', label);
+   };
+   try {
+     check(new URL(url).origin === `https://${process.env.ISOLATION_PROJECT_REF}.supabase.co`, 'Target mismatch');
+     check(key?.startsWith('sb_publishable_'), 'A public publishable key is required');
+     const makeClient = () => createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+     const accounts = [];
+     for (const label of ['A', 'B']) {
+       const client = makeClient(); clients.push(client);
+       const login = await client.auth.signInWithPassword({ email: process.env[`ISOLATION_${label}_EMAIL`], password: process.env[`ISOLATION_${label}_PASSWORD`] });
+       delete process.env[`ISOLATION_${label}_PASSWORD`];
+       check(!login.error, `Test ${label} login failed`);
+       const verified = await client.auth.getUser();
+       check(!verified.error && verified.data.user, `Test ${label} identity verification failed`);
+       accounts.push({ client, id: verified.data.user.id });
+     }
+     check(accounts[0].id !== accounts[1].id, 'Distinct test accounts required');
+     const tables = ['profiles', 'lesson_progress', 'study_sessions', 'question_attempts', 'user_topic_mastery'];
+     const owner = table => table === 'profiles' ? 'id' : 'user_id';
+     const payload = (table, id) => ({
+       profiles: { id, display_name: 'Isolation probe' },
+       lesson_progress: { user_id: id, lesson_id: 'b967d196-6dea-55c9-a35c-cbbd82b654b9', lesson_version_id: '3de4e9ff-3252-56ac-89ee-4a5be72ebfab' },
+       study_sessions: { user_id: id, kind: 'lesson' },
+       question_attempts: { user_id: id, question_id: 'd6946209-76b6-59b4-beff-8c0a6251fda9', question_version_id: 'bad65157-3d32-562e-9981-810904d238f7', assignment_key: crypto.randomUUID() },
+       user_topic_mastery: { user_id: id, topic_id: 'd1fbfb4b-c7ba-5fa1-87b3-9ace0a559467', algorithm_version: 'isolation-test', alpha: 1, beta: 1, estimate: 0.5, eligible_attempt_count: 0, distinct_question_count: 0, distinct_evidence_days: 0 },
+     })[table];
+     // Validate both fresh fixture profiles before sending ANY mutation probe.
+     for (const { client, id } of accounts) {
+       const profile = await client.from('profiles').select('id,display_name').eq('id', id);
+       check(!profile.error && profile.data?.length === 1 && profile.data[0].display_name === 'Isolation check', 'Fresh fixture profile missing');
+     }
+     for (const [index, { client, id }] of accounts.entries()) {
+       const other = accounts[1 - index].id;
+       for (const table of tables) {
+         const label = `${index === 0 ? 'A' : 'B'}: ${table}`;
+         const read = client.from(table).select(owner(table)).in(owner(table), [id, other]);
+         if (table === 'question_attempts') await denied(read, `${label} raw read not denied`);
+         else {
+           const result = await read;
+           check(!result.error && result.data?.length === 1 && result.data[0][owner(table)] === id, `${label} read isolation failed`);
+         }
+         await denied(client.from(table).insert(payload(table, other)), `${label} foreign insert not denied`);
+         if (table === 'profiles') {
+           const update = await client.from(table).update({ display_name: 'Isolation probe' }).eq('id', other).select('id');
+           check(!update.error && update.data?.length === 0, `${label} foreign update failed isolation`);
+           await denied(client.from(table).update({ id: other }).eq('id', id), `${label} owner transfer not denied`);
+         } else {
+           // Do not chain .select(): a SELECT denial could mask an allowed write.
+           await denied(client.from(table).update({ user_id: id }).eq('user_id', other), `${label} foreign update not denied`);
+           await denied(client.from(table).insert(payload(table, id)), `${label} own trusted insert not denied`);
+         }
+         await denied(client.from(table).delete().eq(owner(table), other), `${label} foreign delete not denied`);
+         const anonymous = makeClient();
+         await denied(anonymous.from(table).select(owner(table)).eq(owner(table), id), `${label} anonymous read not denied`);
+         await denied(anonymous.from(table).insert(payload(table, id)), `${label} anonymous insert not denied`);
+         await denied(anonymous.from(table).update(table === 'profiles' ? { display_name: 'Isolation probe' } : { user_id: other }).eq(owner(table), id), `${label} anonymous update not denied`);
+         await denied(anonymous.from(table).delete().eq(owner(table), id), `${label} anonymous delete not denied`);
+         console.log(`PASS ${label}`);
+       }
+     }
+     console.log('API checks passed. Verification still requires matching SQL baseline fingerprints.');
+   } catch (error) {
+     // Only our static labels are printed; never emit provider responses or credentials.
+     console.error('FAIL: isolation checks did not complete. Stop and review locally.');
+     if (error instanceof Error && !error.message.includes('://')) console.error(error.message.startsWith('A:') || error.message.startsWith('B:') ? error.message : 'Check target, login, and fixtures.');
+     process.exitCode = 1;
+   } finally {
+     await Promise.allSettled(clients.map(client => client.auth.signOut({ scope: 'local' })));
+   }
+   '@ | node --env-file=.env.isolation.local --input-type=module
+     if ($LASTEXITCODE -ne 0) { throw 'Isolation verification failed; inspect only test records.' }
+   } finally {
+     foreach ($name in $isolationVariables) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
+   }
+   ```
+
+5. Repeat the SQL fingerprint query from step 3. Require five identical counts/fingerprints, ten `PASS` lines (five tables in each direction), and exit code zero. A denial must be PostgreSQL `42501`; a duplicate-key/validation error is not a pass. Record the project/environment, timestamp, migration version, audit result, API result, and fingerprint comparison without emails, passwords, JWTs, or user rows. Leave fixtures in the disposable environment; this procedure performs no cleanup deletion. A failed check stops the run: inspect only test fixtures and report the failure before changing policies.
+
+**Completion and limits:** this procedure has been prepared, not executed here. Migration/audit success is user-reported; Step 3C-2 behavioral verification remains **pending** until the API run and unchanged fingerprints are confirmed. Passing proves the tested direct Data API operations for this schema/environment at that time, not every future endpoint or production readiness. Raw attempts are denied even to owners; own safe reads are positive controls. Profile bootstrap/own-profile updates, application server authorization, RPCs, Storage, token expiry/revocation, concurrent transactions, and deletion cascades are outside this small check. A disposable project's result does not independently prove the live project's behavior; compare its migration/audit configuration and keep live write probes prohibited. Use the official [password sign-in](https://supabase.com/docs/reference/javascript/auth-signinwithpassword), [verified user](https://supabase.com/docs/reference/javascript/auth-getuser), and [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) references when maintaining this procedure.
+
+Procedure validation: PowerShell and embedded JavaScript syntax checks passed, as did `git diff --check`. Offline simulations confirmed that the normal expected responses pass and foreign-read leakage, foreign-update leakage, and an unrelated duplicate-key denial fail. These simulations do not execute PostgreSQL or verify hosted RLS. No application tests/build were run for this documentation-only change.
 
 ## Folder structure
 
@@ -161,7 +317,7 @@ tests/e2e/                Authentication, learner flows, responsiveness, accessi
 tests/fixtures/           Local synthetic Supabase Auth HTTP fixture
 ```
 
-`src/server/auth` contains the implemented auth boundary. `supabase/migrations` and `supabase/tests` now contain the authorized Step 3C-1 preparation files; nothing is applied or connected to the app yet.
+`src/server/auth` contains the implemented auth boundary. `supabase/migrations` and `supabase/tests` contain the authorized Step 3C-1 preparation files. Migration application is user-reported; the app still has no progress persistence integration.
 
 ## Routing and layouts
 

@@ -11,3 +11,9 @@ test-results/
 .DS_Store
 Thumbs.db
 *.log
+# Local environment files and credentials
+.env*
+!.env.example
+
+# Temporary isolation test script
+run-isolation.ps1
