@@ -2,7 +2,7 @@
 
 Interview Compass is an AI-powered adaptive learning platform in development, designed to help students and professionals prepare for technical interviews. The current frontend prototype connects educational sample lessons, interactive practice, and illustrative progress displays. The long-term plan adds grounded AI tutoring and evidence-based personalization.
 
-**Status:** Initial development stage with email/password signup, login, confirmation, logout, and protected study routes using Supabase SSR sessions (Step 3B). Progress remains illustrative; application tables, persistent learning progress, password recovery, OpenAI, code execution, and deployment are not implemented. Hosted email delivery and dashboard configuration require verification. This is not the complete Phase 1 MVP.
+**Status:** Initial development stage with email/password signup, login, confirmation, logout, and protected study routes using Supabase SSR sessions (Step 3B). Step 3C-1 prepares an unapplied database migration and local SQL checks; see [the developer guide](DEVELOPER_GUIDE.md#step-3c-1-prepared-database-migration). Progress remains illustrative; no application database changes or persistence integration have been executed. Password recovery, OpenAI, code execution, and deployment are not implemented. Hosted email delivery and dashboard configuration require verification. This is not the complete Phase 1 MVP.
 
 ## Frontend Prototype
 

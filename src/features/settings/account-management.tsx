@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDemoPreferences } from "./demo-preferences";
@@ -10,10 +10,74 @@ function AccountFeedback({ state }: { state: AccountFormState }) {
   return state.status !== "idle" ? <p className="feedback mt-4 text-sm" role={state.status === "error" ? "alert" : "status"}>{state.message}</p> : null;
 }
 
+function EmailManagement() {
+  const { account } = useDemoPreferences();
+  const [state, action, pending] = useActionState(updateAccount.bind(null, "email"), { status: "idle" } as AccountFormState);
+  const [isOpen, setIsOpen] = useState(false);
+  const [stateAtOpen, setStateAtOpen] = useState<AccountFormState>(state);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const form = useRef<HTMLFormElement>(null);
+  const newEmail = useRef<HTMLInputElement>(null);
+
+  function openDialog() {
+    // Keep an in-flight form mounted so its result is still announced if the dialog is dismissed.
+    if (!pending) form.current?.reset();
+    setStateAtOpen(state);
+    setIsOpen(true);
+    dialog.current?.showModal();
+    newEmail.current?.focus();
+  }
+
+  return <Card role="region" aria-labelledby="account-email-title" className="p-4 sm:p-6">
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <h3 id="account-email-title" className="section-title">Email address</h3>
+        <p id="account-current-email" className="mt-1 break-all text-sm text-muted-foreground">{account.email}</p>
+      </div>
+      <Button ref={trigger} variant="outline" size="sm" type="button" aria-haspopup="dialog" aria-controls="email-change-dialog" onClick={openDialog}>Change email</Button>
+    </div>
+    {account.pendingEmail && account.pendingEmail !== account.email && <p className="mt-4 break-all text-sm" role="status">Awaiting confirmation: {account.pendingEmail}</p>}
+    {!isOpen && <>
+      {pending && <p className="mt-4 text-sm" role="status">Requesting email change…</p>}
+      {!pending && <AccountFeedback state={state} />}
+    </>}
+    {/* Native modality makes the background inert; explicit Tab wrapping keeps focus in the form. */}
+    <dialog ref={dialog} id="email-change-dialog" className="email-change-dialog p-4 sm:p-6"
+      aria-labelledby="email-change-title" aria-describedby="email-change-help"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        // Server Actions add hidden inputs, which must never become focus-loop targets.
+        const controls = event.currentTarget.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input:not([type=hidden]):not(:disabled), button:not(:disabled)");
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first?.focus();
+        }
+      }}
+      onClose={() => { setIsOpen(false); trigger.current?.focus(); }}>
+      <h2 id="email-change-title" className="text-lg font-semibold">Change email</h2>
+      <p id="email-change-help" className="mt-2 text-sm text-muted-foreground">Confirm the links sent to your current and new inboxes. Your current email stays active until verification is complete.</p>
+      <form ref={form} action={action} onSubmit={(event) => { if (pending) event.preventDefault(); }} aria-busy={pending} className="mt-6 space-y-6">
+        <div><label htmlFor="current-email" className="field-label">Current email</label>
+          <input id="current-email" className="field" value={account.email} readOnly /></div>
+        <div><label htmlFor="new-email" className="field-label">New email address</label>
+          <input ref={newEmail} id="new-email" name="email" type="email" className="field" required maxLength={254} autoComplete="email" disabled={pending} /></div>
+        {state !== stateAtOpen && <AccountFeedback state={state} />}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" type="button" onClick={() => dialog.current?.close()}>Cancel</Button>
+          <Button type="submit" disabled={pending}>{pending ? "Processing…" : "Confirm Change"}</Button>
+        </div>
+      </form>
+    </dialog>
+  </Card>;
+}
+
 export function AccountManagement() {
   const { account } = useDemoPreferences();
   const [profileState, profileAction, profilePending] = useActionState(updateAccount.bind(null, "profile"), { status: "idle" } as AccountFormState);
-  const [emailState, emailAction, emailPending] = useActionState(updateAccount.bind(null, "email"), { status: "idle" } as AccountFormState);
   return <section aria-labelledby="account-management-title" className="mb-8 max-w-3xl space-y-6">
     <h2 id="account-management-title" className="section-title">Account Management</h2>
     <Card className="p-4 sm:p-6">
@@ -30,19 +94,7 @@ export function AccountManagement() {
       </form>
       <AccountFeedback state={profileState} />
     </Card>
-    <Card className="p-4 sm:p-6">
-      <h3 className="section-title">Email address</h3>
-      <div className="mt-6"><label htmlFor="current-email" className="field-label">Current email</label>
-        <input id="current-email" className="field" value={account.email} readOnly /></div>
-      {account.pendingEmail && account.pendingEmail !== account.email && <p className="mt-4 text-sm" role="status">Awaiting confirmation: {account.pendingEmail}</p>}
-      <form action={emailAction} onSubmit={(event) => { if (emailPending) event.preventDefault(); }} aria-busy={emailPending} className="mt-6 space-y-6">
-        <div><label htmlFor="new-email" className="field-label">New email address</label>
-          <input id="new-email" name="email" type="email" className="field" required maxLength={254} autoComplete="email" aria-describedby="email-change-help" />
-          <p id="email-change-help" className="mt-2 text-sm text-muted-foreground">Keep access to your current inbox. Complete the confirmation emails before using the new address.</p></div>
-        <Button disabled={emailPending} type="submit">{emailPending ? "Requesting change…" : "Request email change"}</Button>
-      </form>
-      <AccountFeedback state={emailState} />
-    </Card>
+    <EmailManagement />
   </section>;
 }
 

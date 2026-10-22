@@ -1,6 +1,6 @@
 # Developer Guide
 
-Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. Progress charts and study history still use explicitly labeled mock records. No application database schema, persisted learning progress, password recovery, account deletion, AI, runner, or deployment is implemented.
+Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. Step 3C-1 prepares an unapplied database migration and local SQL checks. Progress charts and study history still use explicitly labeled mock records. No application database changes have been executed; persisted learning progress, password recovery, account deletion, AI, runner, and deployment remain unimplemented.
 
 The implementation intentionally stops before the complete Phase 1 product in [PRD.md](PRD.md). The user's frontend request permits public sample answers and local grading for demonstration. Production assessment keys must move behind authenticated server workflows before real assessments are introduced.
 
@@ -70,6 +70,27 @@ Verification uses unit mocks and a local GoTrue-shaped HTTP fixture with the act
 
 The manual scaffold preserves the existing repository and documents. It follows the official [Next.js installation guide](https://nextjs.org/docs/app/getting-started/installation), [Tailwind Next.js guide](https://tailwindcss.com/docs/installation/framework-guides/nextjs), and [shadcn/ui manual setup](https://ui.shadcn.com/docs/installation/manual). Next.js 16 uses asynchronous route parameters and a separate ESLint command.
 
+### Step 3C-1: Prepared database migration
+
+[20261021200000_prepare_learning_records.sql](supabase/migrations/20261021200000_prepare_learning_records.sql) and [learning_records.sql](supabase/tests/learning_records.sql) are **prepared, not executed**. The exact staged schema and access rules are in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md#prepared-step-3c-1-subset). The app still uses mock progress; Auth/settings code is unchanged. No CLI, database packages, containers, or generated types were installed/created by this step.
+
+**Apply locally later:** first review the SQL and target inventory. This initial migration intentionally fails if its tables/functions already exist; do not hide collisions with `IF NOT EXISTS`. With a supported standalone Supabase CLI, Docker, and `psql` available, follow the [official local migration workflow](https://supabase.com/docs/guides/local-development/database-migrations) in a disposable, unlinked local project. Run `supabase init` only if `supabase/config.toml` is absent, then `supabase start` (initial startup can already apply migrations). Apply any remaining migrations and inspect SQL with:
+
+```powershell
+supabase migration up --local
+supabase db lint --local
+# Set LOCAL_SUPABASE_DB_URL to the disposable LOCAL stack's postgres-owner connection.
+$localDatabase = [uri]$env:LOCAL_SUPABASE_DB_URL
+if ($localDatabase.Host -notin @('127.0.0.1', 'localhost')) { throw 'Local test database required.' }
+psql --dbname="$env:LOCAL_SUPABASE_DB_URL" --set=ON_ERROR_STOP=1 --file=supabase/tests/learning_records.sql
+```
+
+The SQL assertions use two owners, a third bootstrap identity, missing identity, and `anon`; they check isolation, protected columns/writes, session ownership, version consistency, invalid records, assignment uniqueness, and a synthetic deletion cascade, then roll back. They are plain `psql` assertions, not a pgTAP suite. Also verify the Data API with synthetic JWTs before enabling persistence. None of these runtime checks has run here; static review cannot establish RLS behavior. Generate types from the validated local schema using `supabase gen types typescript --local --schema public` and save the output to `src/lib/supabase/database.types.ts`; do not handwrite or guess them. Keep all connection secrets out of commits/logs.
+
+Profile bootstrap/backfill and every persistence use case remain separate work. Before wiring writes, implement verified-actor adapters, safe attempt feedback reads, reviewed content/keys, atomic grading/audit/replay/concurrency rules, and the PRD mastery algorithm. In account deletion, remove attempts before their referenced sessions and Auth identity. No interview research tables, live project link, remote push, or production application is authorized by this preparation. Any later remote application needs a backup, target/schema/history review, a reviewed migration plan, and explicit authorization; do not paste the SQL into the live dashboard now.
+
+**Rollback:** failure before `COMMIT` rolls back the migration transaction. After successful application, prefer retaining the unused schema and a reviewed forward correction. For an unwanted disposable-local installation, recreate the local database from the previous source revision, acknowledging loss of local test data. Shared environments require backup and a separately reviewed reverse migration that removes only this migration's objects in dependency order; never drop `auth.users`, the Auth schema, or an existing private schema. `migration repair` changes history and is not a database rollback. Do not edit an already-applied migration. Namespace creation and catalog seed inserts are idempotent where appropriate; the complete migration is applied once through migration history.
+
 ## Folder structure
 
 ```text
@@ -106,7 +127,7 @@ tests/e2e/                Authentication, learner flows, responsiveness, accessi
 tests/fixtures/           Local synthetic Supabase Auth HTTP fixture
 ```
 
-`src/server/auth` contains the implemented auth boundary. Add `supabase/` only when migrations are authorized.
+`src/server/auth` contains the implemented auth boundary. `supabase/migrations` and `supabase/tests` now contain the authorized Step 3C-1 preparation files; nothing is applied or connected to the app yet.
 
 ## Routing and layouts
 
@@ -134,6 +155,8 @@ Routes stay small and compose feature components. Shared presentation belongs in
 2. `TopicLibrary` filters those records using the search input and selected path.
 3. `TopicCard` receives one topic through a prop, derives its real sample lesson count, and links to its topic route.
 4. The route finds lessons by `topicId` and renders links to them.
+
+`AppShell` shares one navigation definition across the persistent desktop sidebar and mobile disclosure. Its compact header aligns with the content width. `ProfileMenu` uses native disclosure semantics and normal Tab order, with Escape/focus return and outside-click/focus-leave dismissal. It displays the verified Auth profile and links to Settings; logout reuses the existing protected server action. The dashboard keeps account details in that menu and places the sample Continue learning recommendation before its compact statistics.
 
 `Button` adapts the shadcn/ui pattern. Its `variant` and `size` props choose styles. `asChild` uses Radix Slot to style a `Link` without creating a button nested around a link. `Card` provides a consistent surface. `Progress` uses native HTML progress semantics to avoid adding a chart or progress library.
 

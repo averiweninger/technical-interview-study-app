@@ -1,6 +1,6 @@
 # Development roadmap
 
-Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, design system, Step 3A connection utilities, and Step 3B email/password authentication flow exist. Step 3B includes cookie session refresh, server-side route checks, logout, and email confirmation; hosted email delivery and dashboard configuration still require verification. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. Application tables/migrations, persistent learning evidence, password recovery, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
+Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, design system, Step 3A connection utilities, and Step 3B email/password authentication flow exist. Step 3B includes cookie session refresh, server-side route checks, logout, and email confirmation; hosted email delivery and dashboard configuration still require verification. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. Step 3C-1 now prepares an unapplied identity/progress migration and local SQL checks; no database or application integration has run. Persistent learning evidence, password recovery, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
 
 ## Delivery strategy and implementation sequence
 

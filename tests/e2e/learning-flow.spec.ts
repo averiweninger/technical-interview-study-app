@@ -1,7 +1,7 @@
 import { expect, test } from "./auth-fixture";
 import AxeBuilder from "@axe-core/playwright";
 
-test("navigation, temporary path selection, and topic filtering", async ({ page, isMobile }) => {
+test("navigation, temporary path selection, and topic filtering", async ({ page }) => {
   await page.goto("/career-paths");
   await page.getByRole("button", { name: "Choose Data Analytics", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Data Analytics", exact: true })).toHaveCount(2);
@@ -11,8 +11,8 @@ test("navigation, temporary path selection, and topic filtering", async ({ page,
   await expect(page.getByRole("heading", { name: "No matching topics" })).toBeVisible();
   await page.getByRole("button", { name: "Reset filters" }).click();
   await expect(page.getByRole("heading", { name: "JavaScript", exact: true })).toBeVisible();
-  if (isMobile) await page.locator("summary").click();
-  await page.getByRole("navigation", { name: isMobile ? "Mobile navigation" : "Main navigation" }).getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Preferred career path")).toHaveValue("data-analytics");
   await page.reload();
   await expect(page.getByLabel("Preferred career path")).toHaveValue("software-engineering");
@@ -63,9 +63,9 @@ test("settings apply across client navigation and reset on refresh", async ({ pa
   await page.getByRole("button", { name: "Apply for this visit" }).click();
   await expect(page.locator('[data-theme="dark"]')).toBeVisible();
   await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
-  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
 });
 
 test("representative pages fit the viewport and expose no serious accessibility findings", async ({ page }, testInfo) => {
@@ -83,14 +83,17 @@ test("representative pages fit the viewport and expose no serious accessibility 
 test("keyboard skip link and mobile navigation work", async ({ page, isMobile }) => {
   await page.goto("/dashboard");
   // Authenticated pages stream after server verification; wait for the workspace before typing.
-  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   if (isMobile) {
-    await page.locator("summary").click();
+    // Tab away from the visible skip link before opening the header control it overlays.
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Navigation", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
     await page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link", { name: "Practice", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Practice questions" })).toBeVisible();
-    await expect(page.locator("details")).not.toHaveAttribute("open", "");
+    await expect(page.locator(".mobile-navigation")).not.toHaveAttribute("open", "");
   }
 });
 

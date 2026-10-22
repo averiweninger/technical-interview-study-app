@@ -1,21 +1,16 @@
-"use client";
-
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { TopicCard } from "@/components/learning/topic-card";
 import { ActivitySummary } from "@/components/learning/activity-summary";
 import { StudyActivity } from "@/components/charts/study-activity";
 import { topics } from "@/data/mock/curriculum";
 import { demoStats, upcomingReviews } from "@/data/mock/progress";
-import { useDemoPreferences } from "@/features/settings/demo-preferences";
 
-// Only the greeting is personalized. All performance data below comes from the labeled fixtures.
+// Recommendations and performance remain labeled samples until persistent learning data exists.
 export function Dashboard() {
-  const { account } = useDemoPreferences();
   const statCards = [
     { label: "Study progress", value: `${demoStats.completion}%`, note: "Sample topic completion" },
     { label: "Questions completed", value: demoStats.answered, note: "Sample practice history" },
@@ -24,33 +19,32 @@ export function Dashboard() {
   ];
 
   return (
-    <>
+    <div className="dashboard">
       <PageHeading
         eyebrow="Overview"
-        title={`Welcome back, ${account.displayName}.`}
-        description="Review sample progress and continue with a lesson or practice set."
+        title="Dashboard"
+        description="Continue a lesson, practice a topic, or review your progress."
         action={<Button variant="outline" asChild><Link href="/practice">Open practice <ArrowRight /></Link></Button>} />
-      <section aria-label="Sample study statistics" className="metric-strip">
-        {statCards.map(({ label, value, note }, index) => <div key={label} className="metric-item">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="metric-value">{value}</p>
-          {index === 0 && <Progress value={demoStats.completion} label="Sample overall study progress" className="mt-3" />}
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">{note}</p>
-        </div>)}
-      </section>
-      <section aria-labelledby="next-step-title" className="mt-6">
+      <section aria-labelledby="next-step-title">
         <Card className="recommended-lesson">
           <div>
-            <p className="eyebrow">Recommended lesson · sample</p>
-            <h2 id="next-step-title">SQL joins</h2>
+            <h2 id="next-step-title" className="section-title">Continue learning</h2>
+            <h3 className="mt-2 text-lg font-semibold">SQL joins</h3>
             <p className="mt-2 text-sm text-muted-foreground">Review INNER and LEFT JOIN, then try the knowledge check.</p>
-            <p className="mt-2 text-xs text-muted-foreground">SQL fundamentals · 12 min</p>
+            <p className="mt-2 text-xs text-muted-foreground">SQL fundamentals · 12 min · sample recommendation</p>
           </div>
           <Button asChild><Link href="/lessons/sql-joins">Continue learning <ArrowRight /></Link></Button>
         </Card>
       </section>
-      <section className="mt-8" aria-labelledby="continue-title">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <section aria-label="Sample study statistics" className="dashboard-stats mt-4">
+        {statCards.map(({ label, value, note }) => <Card key={label}>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="metric-value">{value}</p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">{note}</p>
+        </Card>)}
+      </section>
+      <section className="mt-6" aria-labelledby="continue-title">
+        <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <h2 id="continue-title" className="section-title">Topics in progress</h2>
             <p className="section-caption">Sample completion across three foundational topics.</p>
@@ -61,7 +55,7 @@ export function Dashboard() {
           {["python", "sql", "algorithms"].map((id) => <TopicCard key={id} topic={topics.find((topic) => topic.id === id)!} />)}
         </div>
       </section>
-      <div className="mt-8 grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Card className="p-4 sm:p-6">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="section-title">Recent activity</h2>
@@ -98,6 +92,6 @@ export function Dashboard() {
           </li>)}
         </ul>
       </Card>
-    </>
+    </div>
   );
 }

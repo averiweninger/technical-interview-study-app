@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { signIn } from "./auth-fixture";
+import { signIn, expectProfile } from "./auth-fixture";
 
 test("anonymous deep links require login and resume at the requested page", async ({ page }) => {
   for (const path of ["/dashboard", "/career-paths", "/learn/python", "/lessons/sql-joins", "/progress", "/settings"]) {
@@ -53,7 +53,8 @@ test("signup, token-hash confirmation, and logout preserve secure session bounda
   const session = (await context.cookies()).find((cookie) => cookie.name.endsWith("auth-token"));
   expect(session).toMatchObject({ httpOnly: true, sameSite: "Lax" });
   expect(await page.evaluate(() => document.cookie)).not.toContain("auth-token");
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await page.getByRole("button", { name: "Log out", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("signed out");
   expect((await context.cookies()).filter((cookie) => cookie.name.endsWith("auth-token"))).toHaveLength(0);
   await page.goto("/dashboard");
@@ -83,7 +84,7 @@ test("expired sessions refresh and forged identity fields never authorize anothe
   session.user.email = "victim@example.test";
   await context.addCookies([{ ...cookie!, value: `base64-${Buffer.from(JSON.stringify(session)).toString("base64url")}` }]);
   const response = await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Welcome back, Learner." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await expect(page.getByTitle(email, { exact: true })).toHaveCount(1);
   await expect(page.getByTitle("victim@example.test", { exact: true })).toHaveCount(0);
   const refreshed = (await context.cookies()).find((value) => value.name === cookie!.name)!;
@@ -136,7 +137,8 @@ test("signup saves names, blocks duplicate submits, and respects provider enumer
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   expect(submissions).toBe(1);
   await page.goto(`/auth/callback?token_hash=${encodeURIComponent(`signup:${email}`)}&type=email`);
-  await expect(page.getByRole("heading", { name: "Welcome back, Taylor Morgan." })).toBeVisible();
+  await expectProfile(page, "Taylor Morgan");
+  await expect(page.getByRole("button", { name: "Account menu", exact: true })).toHaveText("TM");
   await expect(page.getByText("Your email has been confirmed.", { exact: false })).toBeVisible();
   await fillSignup("disclosed@example.test");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
@@ -151,19 +153,21 @@ test("account settings persist names, confirm email changes, and expose no delet
   test.setTimeout(120_000);
   const email = await signIn(page);
   await page.goto("/settings");
-  await expect(page.getByLabel("Current email", { exact: true })).toHaveValue(email);
+  await expect(page.locator("#account-current-email")).toHaveText(email);
   await page.getByLabel("First name", { exact: true }).fill("Jordan");
   await page.getByLabel("Last name", { exact: true }).fill("Rivera");
   await page.getByRole("button", { name: "Save name", exact: true }).click();
   await expect(page.getByText("Your name has been updated.", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
-  await expect(page.getByRole("heading", { name: "Welcome back, Jordan Rivera." })).toBeVisible();
+  await expectProfile(page, "Jordan Rivera");
+  await expect(page.getByRole("button", { name: "Account menu", exact: true })).toHaveText("JR");
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Welcome back, Jordan Rivera." })).toBeVisible();
+  await expectProfile(page, "Jordan Rivera");
   await page.goto("/settings");
   const newEmail = `updated-${crypto.randomUUID()}@example.test`;
+  await page.getByRole("button", { name: "Change email", exact: true }).click();
   await page.getByLabel("New email address").fill(newEmail.toUpperCase());
-  await page.getByRole("button", { name: "Request email change", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm Change", exact: true }).click();
   await expect(page.getByText("Email change requested.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Current email", { exact: true })).toHaveValue(email);
   const cookie = (await context.cookies()).find((value) => value.name.endsWith("auth-token"))!;
@@ -171,10 +175,13 @@ test("account settings persist names, confirm email changes, and expose no delet
   await page.goto(`/auth/callback?type=email_change&token_hash=email-current:${id}`);
   await expect(page.getByRole("status")).toContainText("remaining email confirmation");
   await page.goto(`/auth/callback?type=email_change&token_hash=email-new:${id}`);
-  await expect(page.getByLabel("Current email", { exact: true })).toHaveValue(newEmail);
+  await expect(page.locator("#account-current-email")).toHaveText(newEmail);
   await expect(page.getByText("Your email address has been confirmed.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Change email", exact: true }).click();
   await page.getByLabel("New email address").fill("failure@example.test");
-  await page.getByRole("button", { name: "Request email change", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm Change", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("could not be requested");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText("could not be requested");
   const deletion = page.getByRole("region", { name: "Delete Account", exact: true });
   await expect(deletion).toContainText("not available on this deployment");

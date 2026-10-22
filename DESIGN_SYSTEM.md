@@ -50,14 +50,14 @@ Controls use a 6px radius (`--radius-control`); panels use 8px (`--radius-panel`
 
 ## Layout conventions
 
-- **Application shell:** persistent left sidebar on desktop; header contains location and theme control. Active navigation uses a navy left edge, tinted background, stronger text, and `aria-current`. Keep demo/data limitations visible without turning them into a large banner.
-- **Dashboard:** a compact metric strip, one recommended lesson, topic rows, then activity and reviews. Do not repeat three cards for every section or add decorative progress rings.
+- **Application shell:** persistent left sidebar on desktop and a single 64px header with a mobile navigation disclosure, location/brand, theme control, and circular initials avatar. Keep header and content aligned to `--content-width`. Settings and logout belong in the avatar disclosure alongside the verified name and email, not primary navigation. Disclosures support native keyboard activation, Tab, Escape with focus return, outside-click dismissal, and closing when focus leaves. Active links use a navy left edge, tinted background, stronger text, and `aria-current`. Show a quiet demo-data label instead of an account/banner row.
+- **Dashboard:** lead with Continue learning, followed by compact, equal-sized statistic cards, topic rows, then activity and reviews. Keep spacing local to the dashboard; preserve reading/practice layouts. Account details belong in the avatar disclosure. Do not repeat three cards for every section or add decorative progress rings.
 - **Career paths:** readable comparison rows with a selection button and a separate selected-path summary. Subjects are plain text; topic links remain actionable.
 - **Topic library:** two columns when workspace width permits, one on smaller screens. Reuse TopicCard; use the same component as rows in the dashboard's `topic-list` container.
 - **Lessons:** `--reading-width` is 68ch. Keep objectives, explanations, examples, checks, and navigation in reading order. A narrow outline/reference rail supplements the article on wide screens.
 - **Practice:** one dominant question panel with topic/format controls and a secondary visit summary. Keep answers and previous/next navigation together. Code exercises remain display-only.
 - **Analytics:** a shared metric strip, labeled table, and the existing study-activity chart. Use the same single-color scale and units across Dashboard and Progress. Label sample data explicitly.
-- **Settings:** a limited-width form with profile, study, and appearance sections. Keep labels above fields and feedback close to the submit action.
+- **Settings:** a limited-width form with profile, study, and appearance sections. Email uses a compact current-address row with a Change email action. Its native modal has a labeled title, focused new-email input, contained keyboard focus, Cancel/Escape dismissal, and focus return. Use `--dialog-backdrop`, existing surface/control tokens, and scrollable viewport bounds. Keep labels above fields and feedback close to the submit action; preserve pending results when a modal is dismissed.
 - **Authentication:** a narrow single-column form on a white surface, separate from the study sidebar. Reuse fields/buttons, explicit labels and autocomplete, inline validation, announced errors, and a disabled submit state while pending. Keep email-confirmation guidance and sign-in links clear.
 
 ## Component styling and interactive states
@@ -86,10 +86,10 @@ Tables and code samples may scroll inside their own labeled containers; the whol
 
 ## Responsive behavior
 
-- **Below 768px:** use the native mobile navigation; 16px page gutters; stack recommendations, path selection, lesson outline, and practice summary below their main content.
+- **Below 768px:** open native navigation from the same compact header, with the link panel beneath it; retain the avatar and theme controls. Use 16px page gutters; stack recommendations, path selection, lesson outline, and practice summary below their main content.
 - **768–1199px:** use a 208px sidebar and 24px gutters. Collapse content columns to account for the sidebar's actual footprint.
 - **1200px and above:** use a 240px sidebar, 32px gutters, and bounded content width (`--content-width`, 82rem). Reading and practice content retain narrower limits.
-- Metrics become two columns below 960px. Secondary dashboard panels split only on wide workspaces. Do not force fixed card or control widths onto mobile.
+- Dashboard statistics use two equal-height columns below 1200px; the analytics metric strip becomes two columns below 960px. Secondary dashboard panels split only on wide workspaces. Do not force fixed card or control widths onto mobile.
 
 Review representative layouts at 360px, 768px, and 1440px, along with dark mode, keyboard focus, loading/empty/error states, and increased text size. Preserve all existing routes, content, state lifetimes, and sample-data distinctions.
 
