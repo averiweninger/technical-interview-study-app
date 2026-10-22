@@ -6,6 +6,7 @@ import { safeNextPath } from "@/features/auth/validation";
 export const metadata: Metadata = { title: "Sign in" };
 
 const notices: Record<string, string> = {
+  "password-updated": "Your password has been updated. Sign in with your new password to continue.",
   "signed-out": "You have been signed out.",
   "session-ended": "Your session has ended. Please sign in again.",
   "confirmation-error": "This confirmation link is invalid or has expired. Try the latest email link, or create your account again to request another.",

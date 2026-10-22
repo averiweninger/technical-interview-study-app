@@ -18,7 +18,8 @@ export default defineConfig({
     url: "http://127.0.0.1:54329/health",
     reuseExistingServer: false,
   }, {
-    command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
+    // Avoid npm/cmd wrapper descendants in Windows process-tree shutdown.
+    command: "node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100/login",
     // A dedicated local auth fixture keeps tests away from .env.local and hosted user accounts.
     env: {

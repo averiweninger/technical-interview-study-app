@@ -9,6 +9,9 @@ type TestUser = { id: string; email: string; new_email?: string; aud: string; ro
 const accessTokens = new Map<string, TestUser>();
 const refreshTokens = new Map<string, TestUser>();
 const users = new Map<string, TestUser>();
+const passwords = new Map<string, string>();
+const recoveryLinks = new Map<string, string>();
+const recoveryFailures = new Set<string>();
 const currentEmailConfirmed = new Set<string>();
 // In-memory PostgREST-shaped records for persistence UI tests, NOT PostgreSQL/RLS verification.
 const catalog = lessons.map((lesson) => ({ id: randomUUID(), slug: lesson.id, lesson_versions: [{ id: randomUUID(), version: 1 }] }));
@@ -52,6 +55,16 @@ const server = createServer(async (request, response) => {
   let input: Record<string, unknown>;
   try { input = raw ? JSON.parse(raw) : {}; } catch { return send(400, { error: "invalid_json" }); }
   const token = request.headers.authorization?.replace(/^Bearer /, "") ?? "";
+
+  // Test-only mailbox. Never present in the application or used against hosted Auth.
+  if (url.pathname === "/__recovery" && request.method === "POST") {
+    return send(200, { token_hash: recoveryLinks.get(String(input.email)) ?? null });
+  }
+  if (url.pathname === "/auth/v1/recover") {
+    const email = String(input.email);
+    if (users.has(email)) recoveryLinks.set(email, randomUUID());
+    return send(200, {});
+  }
 
   if (url.pathname.startsWith("/rest/v1/")) {
     const service = request.headers.apikey === "sb_secret_synthetic_e2e_only";
@@ -130,6 +143,13 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/auth/v1/user") {
     const user = accessTokens.get(token);
     if (user && request.method === "PUT") {
+      if (typeof input.password === "string") {
+        if (user.email.startsWith("recovery-update-failure-") && !recoveryFailures.has(user.id)) {
+          recoveryFailures.add(user.id);
+          return send(422, { code: "weak_password", message: "Synthetic policy failure" });
+        }
+        passwords.set(user.id, input.password);
+      }
       if (user.email === "path-save-failure@example.test" && input.data && typeof input.data === "object" && "career_path_id" in input.data) return send(503, { code: "unavailable" });
       if (input.email === "failure@example.test") return send(500, { code: "unexpected_failure", message: "Synthetic failure" });
       if (input.data && typeof input.data === "object") user.user_metadata = { ...user.user_metadata, ...input.data };
@@ -149,7 +169,8 @@ const server = createServer(async (request, response) => {
       return send(200, issueSession(user));
     }
     const email = String(input.email);
-    if (input.password !== "Synthetic-passphrase-123" || !email.endsWith("@example.test")) {
+    const existingUser = users.get(email);
+    if (input.password !== (existingUser ? passwords.get(existingUser.id) ?? "Synthetic-passphrase-123" : "Synthetic-passphrase-123") || !email.endsWith("@example.test")) {
       return send(400, { code: "invalid_credentials", message: "Invalid credentials" });
     }
     return send(200, issueSession(makeUser(email)));
@@ -161,6 +182,12 @@ const server = createServer(async (request, response) => {
     return send(200, { ...user, email_confirmed_at: null, identities: [] });
   }
   if (url.pathname === "/auth/v1/verify") {
+    if (input.type === "recovery") {
+      const entry = [...recoveryLinks].find(([, value]) => value === input.token_hash);
+      if (!entry) return send(403, { code: "otp_expired", message: "Invalid or expired link" });
+      recoveryLinks.delete(entry[0]);
+      return send(200, issueSession(users.get(entry[0])!));
+    }
     if (input.type === "email_change" && typeof input.token_hash === "string") {
       const [stage, id] = input.token_hash.split(":");
       const user = [...users.values()].find((value) => value.id === id);

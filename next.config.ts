@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Browser tests use an isolated cache so an existing local study session is not disturbed.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // Auth actions carry passwords; callback URLs carry one-use bearer credentials.
+  logging: {
+    serverFunctions: false,
+    incomingRequests: { ignore: [/\/auth\/(?:callback|recovery)(?:[/?]|$)/] },
+  },
   experimental: { serverActions: { bodySizeLimit: "16kb" } },
   async headers() {
     return [{ source: "/(.*)", headers: [

@@ -49,6 +49,7 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next: strin
     </div>
     {state.status === "error" && <p role="alert" className="feedback text-sm">{state.message}</p>}
     <Button type="submit" disabled={pending} className="w-full">{pending ? (signup ? "Creating account…" : "Signing in…") : (signup ? "Create account" : "Sign in")}</Button>
+    {!signup && <Link className="section-link" href="/forgot-password">Forgot password?</Link>}
     <p className="text-sm text-muted-foreground">
       {signup ? "Already have an account? " : "New to Interview Compass? "}
       <Link className="section-link" href={`/${signup ? "login" : "signup"}?next=${encodeURIComponent(safeNextPath(next))}`}>
