@@ -12,6 +12,7 @@ const users = new Map<string, TestUser>();
 const passwords = new Map<string, string>();
 const recoveryLinks = new Map<string, string>();
 const recoveryFailures = new Set<string>();
+const preferenceFailures = new Set<string>();
 const currentEmailConfirmed = new Set<string>();
 // In-memory PostgREST-shaped records for persistence UI tests, NOT PostgreSQL/RLS verification.
 const catalog = lessons.map((lesson) => ({ id: randomUUID(), slug: lesson.id, lesson_versions: [{ id: randomUUID(), version: 1 }] }));
@@ -26,6 +27,7 @@ function makeUser(email: string): TestUser {
   if (existing) return existing;
   const user = { id: randomUUID(), email, aud: "authenticated", role: "authenticated", email_confirmed_at: new Date().toISOString(), app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
   users.set(email, user);
+  if (email.startsWith("preference-persist-")) user.user_metadata = { first_name: "Taylor", last_name: "Saved", career_path_id: "business-analytics", unrelated_marker: "keep-fixture-metadata" };
   return user;
 }
 
@@ -143,6 +145,11 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/auth/v1/user") {
     const user = accessTokens.get(token);
     if (user && request.method === "PUT") {
+      const preferenceFailureKey = `${user.id}:${input.data && typeof input.data === "object" && Object.keys(input.data).length === 1 ? "theme" : "form"}`;
+      if (user.email.startsWith("preference-retry-") && input.data && typeof input.data === "object" && "theme" in input.data && !preferenceFailures.has(preferenceFailureKey)) {
+        preferenceFailures.add(preferenceFailureKey);
+        return send(503, { code: "unavailable", message: "Synthetic preference save failure" });
+      }
       if (typeof input.password === "string") {
         if (user.email.startsWith("recovery-update-failure-") && !recoveryFailures.has(user.id)) {
           recoveryFailures.add(user.id);
@@ -152,7 +159,12 @@ const server = createServer(async (request, response) => {
       }
       if (user.email === "path-save-failure@example.test" && input.data && typeof input.data === "object" && "career_path_id" in input.data) return send(503, { code: "unavailable" });
       if (input.email === "failure@example.test") return send(500, { code: "unexpected_failure", message: "Synthetic failure" });
-      if (input.data && typeof input.data === "object") user.user_metadata = { ...user.user_metadata, ...input.data };
+      if (input.data && typeof input.data === "object") {
+        for (const [key, value] of Object.entries(input.data)) {
+          if (value === null) delete user.user_metadata[key];
+          else user.user_metadata[key] = value;
+        }
+      }
       if (typeof input.email === "string") user.new_email = input.email;
     }
     return user ? send(200, user) : send(401, { code: "bad_jwt", message: "Invalid session" });

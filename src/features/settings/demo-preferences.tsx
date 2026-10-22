@@ -1,39 +1,42 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, useTransition, type ReactNode } from "react";
 import type { AccountProfile } from "@/features/auth/profile";
+import type { StudyPreferences } from "./study-preferences";
+import { saveStudyPreferences } from "./preference-actions";
 
-export interface DemoPreferences {
+export interface DemoPreferences extends StudyPreferences {
   careerPathId: string;
-  dailyMinutes: number;
-  explanationLevel: "beginner" | "intermediate" | "advanced";
-  theme: "light" | "dark";
 }
-
-export const initialPreferences: Omit<DemoPreferences, "careerPathId"> = {
-  dailyMinutes: 30,
-  explanationLevel: "beginner", theme: "light",
-};
 
 type PreferencesContextValue = {
   account: AccountProfile;
   preferences: DemoPreferences;
-  updatePreferences: (changes: Partial<Omit<DemoPreferences, "careerPathId">>) => void;
+  saveTheme: (theme: StudyPreferences["theme"]) => void;
+  themePending: boolean;
+  themeMessage: { status: "success" | "error"; message: string } | null;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
-// Path selection comes from the verified account. Only the remaining preferences are temporary.
+// The verified server DTO supplies both SSR and hydration; there is no browser-storage fallback.
 export function DemoPreferencesProvider({ children, user }: { children: ReactNode; user: AccountProfile }) {
-  const [temporary, setPreferences] = useState(initialPreferences);
-  const preferences = { ...temporary, careerPathId: user.careerPathId };
-
-  function updatePreferences(changes: Partial<Omit<DemoPreferences, "careerPathId">>) {
-    setPreferences((current) => ({ ...current, ...changes }));
+  const preferences = { ...user.studyPreferences, careerPathId: user.careerPathId };
+  const [themeMessage, setThemeMessage] = useState<PreferencesContextValue["themeMessage"]>(null);
+  const [themePending, startTransition] = useTransition();
+  const busy = useRef(false);
+  function saveTheme(theme: StudyPreferences["theme"]) {
+    if (busy.current) return;
+    busy.current = true;
+    startTransition(async () => {
+      try { setThemeMessage(await saveStudyPreferences({ theme })); }
+      catch { setThemeMessage({ status: "error", message: "Theme could not be saved. Please try again." }); }
+      finally { busy.current = false; }
+    });
   }
 
   return (
-    <PreferencesContext.Provider value={{ account: user, preferences, updatePreferences }}>
+    <PreferencesContext.Provider value={{ account: user, preferences, saveTheme, themePending, themeMessage }}>
       <div data-theme={preferences.theme} className="min-h-screen bg-background text-foreground">{children}</div>
     </PreferencesContext.Provider>
   );

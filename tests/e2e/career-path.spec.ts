@@ -38,7 +38,7 @@ test("settings saves another path and a failed save retains the prior choice", a
   await page.goto("/settings");
   await page.getByLabel("Preferred career path").selectOption("technology-consulting");
   await page.getByRole("button", { name: "Save preferences", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Career path saved" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Preferences saved" })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Preferred career path")).toHaveValue("technology-consulting");
   await page.goto("/career-paths");

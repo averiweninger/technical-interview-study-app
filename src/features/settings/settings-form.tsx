@@ -8,39 +8,43 @@ import { Button } from "@/components/ui/button";
 import { careerPaths } from "@/data/mock/curriculum";
 import { useDemoPreferences, type DemoPreferences } from "./demo-preferences";
 import { AccountManagement, DeleteAccountUnavailable } from "./account-management";
-import { saveCareerPath } from "./career-path-actions";
+import { saveStudyPreferences } from "./preference-actions";
+import { preferencesUpdateSchema, type PreferencesResult } from "./study-preferences";
 
-export function SettingsForm() {
-  const { preferences, updatePreferences } = useDemoPreferences();
-  // Theme is applied immediately through the provider. The remaining fields form a local draft.
-  const [draft, setDraft] = useState<Omit<DemoPreferences, "theme">>({
-    careerPathId: preferences.careerPathId,
-    dailyMinutes: preferences.dailyMinutes,
-    explanationLevel: preferences.explanationLevel,
-  });
-  const [message, setMessage] = useState("");
+export function SettingsForm({ timezones }: { timezones: string[] }) {
+  const { preferences, themePending } = useDemoPreferences();
+  const [draft, setDraft] = useState<DemoPreferences>(preferences);
+  const [baseline, setBaseline] = useState(preferences);
+  const [message, setMessage] = useState<PreferencesResult | null>(null);
+  // Reconcile a verified server update (including the header theme) without a hydration effect.
+  // Keep genuine edits as a visibly unsaved draft rather than replacing them with server values.
+  if (JSON.stringify(baseline) !== JSON.stringify(preferences)) {
+    setBaseline(preferences);
+    const next = { ...draft };
+    for (const key of Object.keys(draft) as (keyof DemoPreferences)[]) {
+      if (draft[key] === baseline[key]) Object.assign(next, { [key]: preferences[key] });
+    }
+    setDraft(next);
+  }
   const [pending, startTransition] = useTransition();
   const busy = useRef(false);
 
+  function editDraft(changes: Partial<DemoPreferences>) {
+    setDraft((current) => ({ ...current, ...changes }));
+    setMessage(null);
+  }
+
   function savePreferences(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy.current) return;
-    if (!Number.isInteger(draft.dailyMinutes) || draft.dailyMinutes < 5 || draft.dailyMinutes > 240) {
-      setMessage("Choose a whole number of minutes between 5 and 240."); return;
-    }
-    if (!careerPaths.some((path) => path.id === draft.careerPathId)) {
-      setMessage("Choose one of the available career paths."); return;
-    }
+    if (busy.current || themePending) return;
+    const { careerPathId, ...studyDraft } = draft;
+    const parsed = preferencesUpdateSchema.safeParse({ ...studyDraft, ...(careerPathId === preferences.careerPathId ? {} : { careerPathId }) });
+    if (!parsed.success) { setMessage({ status: "error", message: parsed.error.issues[0].message }); return; }
     busy.current = true;
     startTransition(async () => {
       try {
-        if (draft.careerPathId !== preferences.careerPathId) {
-          const saved = await saveCareerPath({ pathId: draft.careerPathId });
-          if (saved.status === "error") { setMessage(saved.message); return; }
-        }
-        updatePreferences({ dailyMinutes: draft.dailyMinutes, explanationLevel: draft.explanationLevel });
-        setMessage("Career path saved. Other study preferences apply for this visit.");
-      } catch { setMessage("Your career path could not be saved. Please try again."); }
+        setMessage(await saveStudyPreferences(parsed.data));
+      } catch { setMessage({ status: "error", message: "Preferences could not be saved. Please retry." }); }
       finally { busy.current = false; }
     });
   }
@@ -51,14 +55,16 @@ export function SettingsForm() {
       title="Settings"
       description="Manage your account, saved career path, and study preferences." />
     <AccountManagement />
-    <form onSubmit={savePreferences} aria-busy={pending} className="max-w-3xl space-y-6">
+    <form onSubmit={savePreferences} aria-busy={pending || themePending} className="max-w-3xl space-y-6">
       <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><SlidersHorizontal size={18} className="text-primary" />Study preferences</h2>
-        <p className="section-caption">Your career path is saved across visits. Time and explanation preferences remain temporary inputs for future planner and tutor features.</p>
+        <p className="section-caption">Save your preferences to use them across visits. Daily goal and explanation level are inputs for future planner and tutor features.</p>
+        <fieldset disabled={pending || themePending} className="min-w-0">
+        <legend className="sr-only">Study and interview preferences</legend>
         <div className="mt-6 space-y-5">
           <div>
             <label htmlFor="preferred-path" className="field-label">Preferred career path</label>
-            <select id="preferred-path" className="field" disabled={pending} value={draft.careerPathId} onChange={(event) => setDraft({ ...draft, careerPathId: event.target.value })}>
+            <select id="preferred-path" className="field" disabled={pending} value={draft.careerPathId} onChange={(event) => editDraft({ careerPathId: event.target.value })}>
               {careerPaths.map((path) => <option value={path.id} key={path.id}>{path.name}</option>)}
             </select>
           </div>
@@ -73,7 +79,7 @@ export function SettingsForm() {
                 max={240}
                 step={1}
                 value={Number.isNaN(draft.dailyMinutes) ? "" : draft.dailyMinutes}
-                onChange={(event) => setDraft({ ...draft, dailyMinutes: event.target.valueAsNumber })}
+                onChange={(event) => editDraft({ dailyMinutes: event.target.valueAsNumber })}
                 required />
               <p className="mt-2 text-xs text-muted-foreground">A preference only; no schedule is generated.</p>
             </div>
@@ -83,7 +89,7 @@ export function SettingsForm() {
                 id="explanation-level"
                 className="field"
                 value={draft.explanationLevel}
-                onChange={(event) => { const value = event.target.value; if (value === "beginner" || value === "intermediate" || value === "advanced") setDraft({ ...draft, explanationLevel: value }); }}>
+                onChange={(event) => { const value = event.target.value; if (value === "beginner" || value === "intermediate" || value === "advanced") editDraft({ explanationLevel: value }); }}>
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
@@ -91,26 +97,45 @@ export function SettingsForm() {
               <p className="mt-2 text-xs text-muted-foreground">For a future tutor; AI is not connected.</p>
             </div>
           </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="timezone" className="field-label">Timezone</label>
+              <input id="timezone" className="field" list="timezone-options" value={draft.timezone} maxLength={100} required
+                onChange={(event) => editDraft({ timezone: event.target.value })} aria-describedby="timezone-help" />
+              <datalist id="timezone-options">{timezones.map((zone) => <option key={zone} value={zone} />)}</datalist>
+              <p id="timezone-help" className="mt-2 text-xs text-muted-foreground">Use an IANA timezone, such as America/Indiana/Indianapolis. Defaults to UTC.</p>
+            </div>
+            <div>
+              <label htmlFor="interview-date" className="field-label">Interview date (optional)</label>
+              <input id="interview-date" className="field" type="date" min="0001-01-01" max="9999-12-31" value={draft.interviewDate ?? ""}
+                onChange={(event) => editDraft({ interviewDate: event.target.value || null })} aria-describedby="interview-date-help" />
+              <Button className="mt-2" type="button" variant="outline" disabled={!draft.interviewDate} onClick={() => editDraft({ interviewDate: null })}>Clear interview date</Button>
+              <p id="interview-date-help" className="mt-2 text-xs text-muted-foreground">A calendar date in your selected timezone. Save after editing or clearing. No study schedule is generated.</p>
+            </div>
+          </div>
         </div>
+        </fieldset>
       </Card>
       <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><Monitor size={18} className="text-primary" />Appearance</h2>
-        <p className="section-caption">Theme changes apply immediately and last for this visit. The header control uses the same preference.</p>
+        <p className="section-caption">Choose a theme, then save. The header control saves theme changes directly.</p>
         <div className="mt-6 max-w-lg">
           <label htmlFor="theme" className="field-label">Theme</label>
           <select
             id="theme"
             className="field"
-            value={preferences.theme}
-            onChange={(event) => { const value = event.target.value; if (value === "light" || value === "dark") updatePreferences({ theme: value }); }}>
+            disabled={pending || themePending}
+            value={draft.theme}
+            onChange={(event) => { const value = event.target.value; if (value === "light" || value === "dark") editDraft({ theme: value }); }}>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
           </select>
         </div>
       </Card>
       <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={pending}><Check />{pending ? "Saving preferences..." : "Save preferences"}</Button>
-        <p className="text-xs text-muted-foreground" role="status">{message || "Career path is saved to your account. Other preferences last for this visit."}</p>
+        <Button type="submit" disabled={pending || themePending}><Check />{pending ? "Saving preferences..." : "Save preferences"}</Button>
+        <p className="text-xs text-muted-foreground" role={message?.status === "error" ? "alert" : "status"}>{pending ? "Saving preferences…" : message?.message || "Changes are drafts until you save."}</p>
+        {JSON.stringify(draft) !== JSON.stringify(preferences) && !pending && <p className="w-full text-xs text-muted-foreground">Unsaved changes. The workspace continues to use your saved preferences.</p>}
       </div>
     </form>
     <DeleteAccountUnavailable />

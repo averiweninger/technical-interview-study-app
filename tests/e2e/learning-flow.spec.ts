@@ -60,7 +60,8 @@ test("self-review and display-only coding have no execution controls", async ({ 
   await expect(page.getByRole("button", { name: /^Run/ })).toHaveCount(0);
 });
 
-test("settings apply across client navigation and reset on refresh", async ({ page }) => {
+test("settings apply across client navigation and persist on refresh", async ({ page }) => {
+  await signIn(page);
   await page.goto("/settings");
   await page.getByLabel("Daily study goal (minutes)").fill("45");
   await page.getByLabel("Theme", { exact: true }).selectOption("dark");
@@ -70,6 +71,9 @@ test("settings apply across client navigation and reset on refresh", async ({ pa
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
+  await expect(page.locator('[data-theme="dark"]')).toBeVisible();
+  await page.goto("/settings");
+  await expect(page.getByLabel("Daily study goal (minutes)")).toHaveValue("45");
 });
 
 test("representative pages fit the viewport and expose no serious accessibility findings", async ({ page }, testInfo) => {
@@ -108,9 +112,11 @@ test("unknown topics show a recovery path", async ({ page }) => {
 });
 
 test("dark workspace preserves contrast, keyboard answers, and responsive layout", async ({ page }) => {
+  await signIn(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/practice?topic=python");
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await expect(page.getByRole("button", { name: "Switch to light theme" })).toBeEnabled();
   // Persisted answers can restore asynchronously; explicitly begin a fresh keyboard exercise.
   await page.getByRole("button", { name: "Reset this visit", exact: true }).click();
   const firstChoice = page.getByRole("radio").first();

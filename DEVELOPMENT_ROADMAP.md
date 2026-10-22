@@ -4,13 +4,17 @@ Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, desi
 
 ## Delivery strategy and implementation sequence
 
+### Persistent preferences follow-up
+
+Step 3 now saves daily goal, explanation level, theme, validated IANA timezone, and optional calendar interview date in verified-owner Auth metadata. Settings supports editing/clearing, honest save failures, and saved-theme restoration; the dashboard shows a timezone-aware calendar-day countdown without generating a plan. No schema or hosted mutation occurred. Local verification and the remaining hosted checks are recorded at the start of DEVELOPER_GUIDE.md. Multi-path onboarding and secure account deletion remain separate tasks; Step 3 and the Phase 1 release gate are incomplete.
+
 ### Career-path selection follow-up
 
 2026-10-22 stabilization: tightened bookmark read-back confirmation and added retry/completion and cross-path progress-preservation regressions. Primary configuration now passes local format checks; the separate isolation target has public configuration only, with no disposable server key or dedicated account credentials available. Hosted application verification remains pending. See the current report at the start of DEVELOPER_GUIDE.md; historical missing-key findings below are not the current configuration result.
 
 Validation: 90 unit tests, 81 local browser cases, lint, TypeScript, content checks, and production build passed. Actual hosted preference verification remains a user smoke check; local tests use synthetic accounts only.
 
-Implemented a durable, verified-owner primary path in existing Auth metadata, workspace revalidation, path-specific dashboard recommendations/topics, and saved-path defaults for the library/practice. Preserved shared completion/history and explicit all-topic browsing. No schema or remote migration is required. Multi-path selection, optional interview date, and remaining onboarding preferences are still separate work.
+Implemented a durable, verified-owner primary path in existing Auth metadata, workspace revalidation, path-specific dashboard recommendations/topics, and saved-path defaults for the library/practice. Preserved shared completion/history and explicit all-topic browsing. No schema or remote migration is required. Daily goal, explanation level, theme, validated timezone, and optional interview date are now implemented locally (see DEVELOPER_GUIDE.md). Multi-path selection and remaining onboarding workflow are still separate work.
 
 ### Step 3D implementation handoff
 

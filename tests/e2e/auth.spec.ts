@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { signIn, expectProfile } from "./auth-fixture";
+import { signIn, expectProfile, expectInitials } from "./auth-fixture";
 
 test("anonymous deep links require login and resume at the requested page", async ({ page }) => {
   for (const path of ["/dashboard", "/career-paths", "/learn/python", "/lessons/sql-joins", "/progress", "/settings"]) {
@@ -138,7 +138,7 @@ test("signup saves names, blocks duplicate submits, and respects provider enumer
   expect(submissions).toBe(1);
   await page.goto(`/auth/callback?token_hash=${encodeURIComponent(`signup:${email}`)}&type=email`);
   await expectProfile(page, "Taylor Morgan");
-  await expect(page.getByRole("button", { name: "Account menu", exact: true })).toHaveText("TM");
+  await expectInitials(page, "TM");
   await expect(page.getByText("Your email has been confirmed.", { exact: false })).toBeVisible();
   await fillSignup("disclosed@example.test");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
@@ -160,7 +160,7 @@ test("account settings persist names, confirm email changes, and expose no delet
   await expect(page.getByText("Your name has been updated.", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
   await expectProfile(page, "Jordan Rivera");
-  await expect(page.getByRole("button", { name: "Account menu", exact: true })).toHaveText("JR");
+  await expectInitials(page, "JR");
   await page.reload();
   await expectProfile(page, "Jordan Rivera");
   await page.goto("/settings");

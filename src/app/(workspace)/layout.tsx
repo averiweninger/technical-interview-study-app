@@ -5,6 +5,6 @@ import { requireUser } from "@/server/auth/session";
 
 export default async function WorkspaceLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
-  // Reset temporary demo preferences when the signed-in identity changes.
+  // Reset interactive request state when the signed-in identity changes.
   return <DemoPreferencesProvider key={user.id} user={user}><AppShell>{children}</AppShell></DemoPreferencesProvider>;
 }

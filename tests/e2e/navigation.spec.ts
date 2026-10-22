@@ -1,4 +1,4 @@
-import { expect, test } from "./auth-fixture";
+import { expect, test, expectInitials } from "./auth-fixture";
 import AxeBuilder from "@axe-core/playwright";
 
 test("compact navigation and account disclosure support keyboard, dismissal, and settings", async ({ page, isMobile }, testInfo) => {
@@ -13,7 +13,7 @@ test("compact navigation and account disclosure support keyboard, dismissal, and
   expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1);
 
   const account = page.getByRole("button", { name: "Account menu", exact: true });
-  await expect(account).toHaveText("L");
+  await expectInitials(page, "L");
   await account.focus();
   await page.keyboard.press("Enter");
   const options = page.locator("#account-options");

@@ -32,7 +32,7 @@ export function ProfileMenu() {
     if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
   }}>
     <summary ref={trigger} role="button" className="avatar account-trigger" aria-label="Account menu" aria-controls="account-options">
-      <span aria-hidden="true">{initials}</span>
+      <span aria-hidden="true" data-initials={initials} className="before:content-[attr(data-initials)]" />
     </summary>
     <div id="account-options" className="profile-panel">
       <div className="border-b border-border px-3 py-3">

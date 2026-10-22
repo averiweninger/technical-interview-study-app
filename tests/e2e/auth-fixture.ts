@@ -15,6 +15,11 @@ export async function expectProfile(page: import("@playwright/test").Page, fullN
   await page.keyboard.press("Escape");
 }
 
+export async function expectInitials(page: import("@playwright/test").Page, initials: string) {
+  const decoration = page.getByRole("button", { name: "Account menu", exact: true }).locator("[data-initials]");
+  await expect.poll(() => decoration.evaluate((node) => getComputedStyle(node, "::before").content)).toBe(JSON.stringify(initials));
+}
+
 type WorkspaceFixtures = { workspaceSession: Awaited<ReturnType<BrowserContext["storageState"]>> };
 
 // Read-only workspace checks reuse one verified synthetic login per worker, avoiding the real

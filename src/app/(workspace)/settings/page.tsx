@@ -4,5 +4,5 @@ import { SettingsForm } from "@/features/settings/settings-form";
 export const metadata: Metadata = { title: "Settings" };
 
 export default function SettingsPage() {
-  return <SettingsForm />;
+  return <SettingsForm timezones={["UTC", ...Intl.supportedValuesOf("timeZone")]} />;
 }

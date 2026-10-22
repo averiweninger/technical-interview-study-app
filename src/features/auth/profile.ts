@@ -1,4 +1,5 @@
 import { getCareerPath } from "@/features/curriculum/career-path-selection";
+import { readStudyPreferences, type StudyPreferences } from "@/features/settings/study-preferences";
 
 export interface AccountProfile {
   id: string;
@@ -8,6 +9,7 @@ export interface AccountProfile {
   displayName: string;
   pendingEmail: string;
   careerPathId: string;
+  studyPreferences: StudyPreferences;
 }
 
 /** Metadata is editable display data, never an authorization source. Older accounts may have no names. */
@@ -21,5 +23,6 @@ export function accountProfile(user: { id: string; email?: string; new_email?: s
     displayName: [firstName, lastName].filter(Boolean).join(" ") || text(metadata.full_name) || text(metadata.name) || "Learner",
     pendingEmail: user.new_email ?? "",
     careerPathId: getCareerPath(metadata.career_path_id).id,
+    studyPreferences: readStudyPreferences(metadata),
   };
 }

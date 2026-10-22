@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const confirmation = useSearchParams().get("confirmation");
   const mobileMenu = useRef<HTMLDetailsElement>(null);
-  const { account, preferences, updatePreferences } = useDemoPreferences();
+  const { account, preferences, saveTheme, themePending, themeMessage } = useDemoPreferences();
   const currentPage = navigation.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
   const pageLabel = pathname.startsWith("/lessons/") ? "Lesson" : pathname === "/settings" ? "Settings" : currentPage?.label ?? "Workspace";
 
@@ -91,13 +91,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="hidden text-sm font-medium md:block">{pageLabel}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <span className="demo-indicator hidden sm:inline" title="Educational sample curriculum. Your saved activity is personal; study preferences remain temporary.">Sample curriculum</span>
+              <span className="demo-indicator hidden sm:inline" title="Educational sample curriculum. Your activity and preferences are saved to your account.">Sample curriculum</span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="size-11"
+                disabled={themePending}
+                aria-busy={themePending}
                 aria-label={preferences.theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-                onClick={() => updatePreferences({ theme: preferences.theme === "light" ? "dark" : "light" })}>
+                onClick={() => saveTheme(preferences.theme === "light" ? "dark" : "light")}>
                 {preferences.theme === "light" ? <Moon /> : <Sun />}
               </Button>
               <ProfileMenu />
@@ -106,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main id="main-content" className="page-content" tabIndex={-1}>
           <p className="demo-indicator mb-2 sm:hidden">Educational sample curriculum</p>
+          {themePending ? <p role="status" className="mb-4 text-sm">Saving theme…</p> : themeMessage && <p role={themeMessage.status === "error" ? "alert" : "status"} className="mb-4 text-sm">{themeMessage.status === "success" ? "Theme saved to your account." : themeMessage.message}</p>}
           {(confirmation === "signup" || confirmation === "email") && <p role="status" className="feedback mt-6 text-sm">
             {confirmation === "signup" ? "Your email has been confirmed. Welcome to your study workspace."
               : account.pendingEmail ? "Confirmation accepted. Complete any remaining email links to finish your email change." : "Your email address has been confirmed."}
