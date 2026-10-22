@@ -6,6 +6,8 @@ Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, desi
 
 ### Career-path selection follow-up
 
+2026-10-22 stabilization: tightened bookmark read-back confirmation and added retry/completion and cross-path progress-preservation regressions. Primary configuration now passes local format checks; the separate isolation target has public configuration only, with no disposable server key or dedicated account credentials available. Hosted application verification remains pending. See the current report at the start of DEVELOPER_GUIDE.md; historical missing-key findings below are not the current configuration result.
+
 Validation: 90 unit tests, 81 local browser cases, lint, TypeScript, content checks, and production build passed. Actual hosted preference verification remains a user smoke check; local tests use synthetic accounts only.
 
 Implemented a durable, verified-owner primary path in existing Auth metadata, workspace revalidation, path-specific dashboard recommendations/topics, and saved-path defaults for the library/practice. Preserved shared completion/history and explicit all-topic browsing. No schema or remote migration is required. Multi-path selection, optional interview date, and remaining onboarding preferences are still separate work.

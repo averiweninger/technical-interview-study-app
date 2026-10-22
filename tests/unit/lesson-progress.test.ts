@@ -121,6 +121,15 @@ describe("persistent lesson progress boundary", () => {
     expect(mocks.profile).not.toHaveBeenCalled();
   });
 
+  it("rejects an unconfirmed bookmark, allows retry, and preserves concurrent completion", async () => {
+    const input = { lessonId: "python-variables", operation: "resume", section: 1 };
+    expect(await saveLessonProgress(input, "shared")).toMatchObject({ status: "error" });
+    mocks.read.mockResolvedValueOnce({ data: { ...row(), resume_section: 1 }, error: null });
+    expect(await saveLessonProgress(input, "shared")).toMatchObject({ status: "ready", progress: { resumeSection: 1 } });
+    mocks.read.mockResolvedValueOnce({ data: { ...row(), status: "completed", resume_section: 2 }, error: null });
+    expect(await saveLessonProgress(input, "shared")).toMatchObject({ status: "ready", progress: { status: "completed", resumeSection: 2 } });
+  });
+
   it("checks action origins before any data access", async () => {
     mocks.headers.mockResolvedValue(new Headers({ origin: "https://foreign.example.test" }));
     expect(await updateLessonProgress({ lessonId: "python-variables", operation: "start" })).toMatchObject({ status: "error" });

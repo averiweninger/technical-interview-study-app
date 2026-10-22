@@ -83,6 +83,9 @@ export async function saveLessonProgress(input: unknown, ip: string): Promise<Le
     }
     const saved = await readOwnedProgress(access);
     if (saved.status !== "ready" || !saved.progress || (operation === "complete" && saved.progress.status !== "completed")) throw new Error("Unconfirmed progress write");
+    // A no-op write or competing bookmark must not be presented as saving this position.
+    // Completion is terminal and legitimately takes precedence over a stale bookmark.
+    if (operation === "resume" && saved.progress.status === "started" && saved.progress.resumeSection !== section) throw new Error("Unconfirmed bookmark write");
     return saved;
   } catch { return failure(); }
 }
