@@ -7,7 +7,10 @@ import { QuizQuestion } from "@/components/learning/quiz-question";
 import { lessons } from "@/data/mock/lessons";
 import { topics } from "@/data/mock/curriculum";
 import { questions } from "@/data/mock/questions";
-import { LessonCompletion } from "@/features/curriculum/lesson-completion";
+import { LessonCompletion, LessonProgressControls, LessonProgressProvider } from "@/features/curriculum/lesson-completion";
+import { getLessonProgress } from "@/server/learning/lesson-progress";
+import { publicQuestion } from "@/server/learning/question-bank";
+import { requireUser } from "@/server/auth/session";
 
 export function generateStaticParams() {
   return lessons.map((lesson) => ({ lessonId: lesson.id }));
@@ -24,6 +27,8 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
   const previous = topicLessons[lessonIndex - 1];
   const next = topicLessons[lessonIndex + 1];
   const check = questions.find((question) => question.id === lesson.checkQuestionId)!;
+  const progress = await getLessonProgress(lesson.id);
+  const actor = await requireUser();
 
   return <div className="lesson-page">
     <Link className="section-link mt-6" href={`/learn/${topic.id}`}><ArrowLeft size={14} />{topic.name} lessons</Link>
@@ -35,8 +40,10 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
         <span className="inline-flex items-center gap-1.5"><BookOpen size={14} />Educational sample</span>
       </div>
     </div>
+    <LessonProgressProvider key={lesson.id} lessonId={lesson.id} initial={progress}>
     <div className="lesson-layout">
       <article className="lesson-reading space-y-8">
+        <LessonProgressControls sections={lesson.sections.map((section) => section.title)} />
         <Card className="p-4 sm:p-6">
           <h2 className="section-title mb-4">What you will learn</h2>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground">
@@ -54,7 +61,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
         </div>
         <Card className="p-4 sm:p-6">
           <h2 className="section-title mb-5">Check your understanding</h2>
-          <QuizQuestion key={check.id} question={check} />
+          <QuizQuestion key={check.id} question={publicQuestion(check)} accountId={actor.id} context="lesson" />
         </Card>
         <LessonCompletion key={lesson.id} />
         <div className="flex flex-wrap justify-between gap-3 border-t border-border pt-6">
@@ -86,5 +93,6 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
         </div>
       </aside>
     </div>
+    </LessonProgressProvider>
   </div>;
 }

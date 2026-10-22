@@ -1,10 +1,11 @@
+import "server-only";
 import type { MultipleChoiceQuestion } from "./types";
 
 export type GradeResult =
   | { status: "invalid"; message: string; }
   | { status: "graded"; isCorrect: boolean; explanation: string; };
 
-// Demonstration grading only. A future authenticated server use case must own real grades and private keys.
+// Called only by authenticated server use cases. Scores describe practice, not mastery.
 export function gradeAnswer(question: MultipleChoiceQuestion, optionId: string): GradeResult {
   if (!question.options.some((option) => option.id === optionId)) {
     return { status: "invalid", message: "Choose one of the listed answers." };

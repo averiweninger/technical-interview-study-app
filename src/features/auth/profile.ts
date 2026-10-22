@@ -1,3 +1,5 @@
+import { getCareerPath } from "@/features/curriculum/career-path-selection";
+
 export interface AccountProfile {
   id: string;
   email: string;
@@ -5,6 +7,7 @@ export interface AccountProfile {
   lastName: string;
   displayName: string;
   pendingEmail: string;
+  careerPathId: string;
 }
 
 /** Metadata is editable display data, never an authorization source. Older accounts may have no names. */
@@ -17,5 +20,6 @@ export function accountProfile(user: { id: string; email?: string; new_email?: s
     id: user.id, email: user.email ?? "", firstName, lastName,
     displayName: [firstName, lastName].filter(Boolean).join(" ") || text(metadata.full_name) || text(metadata.name) || "Learner",
     pendingEmail: user.new_email ?? "",
+    careerPathId: getCareerPath(metadata.career_path_id).id,
   };
 }

@@ -1,97 +1,54 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, CalendarDays } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { TopicCard } from "@/components/learning/topic-card";
 import { ActivitySummary } from "@/components/learning/activity-summary";
 import { StudyActivity } from "@/components/charts/study-activity";
 import { topics } from "@/data/mock/curriculum";
-import { demoStats, upcomingReviews } from "@/data/mock/progress";
+import { getStudyProgress } from "@/server/learning/study-progress";
+import { requireUser } from "@/server/auth/session";
+import { getCareerPath } from "@/features/curriculum/career-path-selection";
 
-// Recommendations and performance remain labeled samples until persistent learning data exists.
-export function Dashboard() {
-  const statCards = [
-    { label: "Study progress", value: `${demoStats.completion}%`, note: "Sample topic completion" },
-    { label: "Questions completed", value: demoStats.answered, note: "Sample practice history" },
-    { label: "Topics in progress", value: demoStats.activeTopics, note: "Across the sample curriculum" },
-    { label: "Study streak", value: `${demoStats.streak} days`, note: "Example consecutive study days" },
-  ];
-
-  return (
-    <div className="dashboard">
-      <PageHeading
-        eyebrow="Overview"
-        title="Dashboard"
-        description="Continue a lesson, practice a topic, or review your progress."
-        action={<Button variant="outline" asChild><Link href="/practice">Open practice <ArrowRight /></Link></Button>} />
-      <section aria-labelledby="next-step-title">
-        <Card className="recommended-lesson">
-          <div>
-            <h2 id="next-step-title" className="section-title">Continue learning</h2>
-            <h3 className="mt-2 text-lg font-semibold">SQL joins</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Review INNER and LEFT JOIN, then try the knowledge check.</p>
-            <p className="mt-2 text-xs text-muted-foreground">SQL fundamentals · 12 min · sample recommendation</p>
-          </div>
-          <Button asChild><Link href="/lessons/sql-joins">Continue learning <ArrowRight /></Link></Button>
-        </Card>
-      </section>
-      <section aria-label="Sample study statistics" className="dashboard-stats mt-4">
-        {statCards.map(({ label, value, note }) => <Card key={label}>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="metric-value">{value}</p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">{note}</p>
-        </Card>)}
-      </section>
-      <section className="mt-6" aria-labelledby="continue-title">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <div>
-            <h2 id="continue-title" className="section-title">Topics in progress</h2>
-            <p className="section-caption">Sample completion across three foundational topics.</p>
-          </div>
-          <Link href="/learn" className="section-link">All topics <ArrowRight size={14} /></Link>
+export async function Dashboard() {
+  const actor = await requireUser();
+  const path = getCareerPath(actor.careerPathId);
+  const result = await getStudyProgress(path.id);
+  return <div className="dashboard">
+    <PageHeading eyebrow="Overview" title="Dashboard" description="Continue a lesson, practice a topic, or review your saved progress." action={<Button variant="outline" asChild><Link href="/practice">Open practice <ArrowRight /></Link></Button>} />
+    <p className="mb-4 text-sm text-muted-foreground">Selected path: <strong className="text-foreground">{path.name}</strong> <Link className="ml-2 underline underline-offset-4" href="/career-paths">Change path</Link></p>
+    {result.status === "error" ? <Card className="p-5"><p role="alert">{result.message}</p><Button asChild variant="outline" className="mt-4"><a href="/dashboard">Reload progress</a></Button></Card> : <>
+      <Card className="recommended-lesson">
+        <div><h2 className="section-title">Continue learning</h2>
+          <h3 className="mt-2 text-lg font-semibold">{result.data.continueLesson?.title ?? "Available path lessons completed"}</h3>
+          <p className="mt-2 text-sm text-muted-foreground">{result.data.continueLesson?.reason ?? "Practice a topic to keep building your understanding."}</p>
         </div>
-        <div className="topic-list">
-          {["python", "sql", "algorithms"].map((id) => <TopicCard key={id} topic={topics.find((topic) => topic.id === id)!} />)}
-        </div>
+        <Button asChild><Link href={result.data.continueLesson ? "/lessons/" + result.data.continueLesson.id + "#section-" + result.data.continueLesson.section : "/practice"}>Continue learning <ArrowRight /></Link></Button>
+      </Card>
+      <section aria-label="Your study statistics" className="dashboard-stats mt-4">
+        {[
+          { label: "Lessons completed", value: result.data.completedLessons + " / " + result.data.totalLessons, note: "Across all paths" },
+          { label: "Graded submissions", value: result.data.gradedAttempts, note: "Saved multiple-choice answers" },
+          { label: "Practice score", value: result.data.accuracy === null ? "--" : result.data.accuracy + "%", note: "Average score; not mastery" },
+          { label: "Self-reviews saved", value: result.data.selfReviews, note: "Ungraded explanations and drafts" },
+        ].map((stat) => <Card key={stat.label}><p className="text-sm text-muted-foreground">{stat.label}</p><p className="metric-value">{stat.value}</p><p className="mt-2 text-xs text-muted-foreground">{stat.note}</p></Card>)}
       </section>
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
-        <Card className="p-4 sm:p-6">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="section-title">Recent activity</h2>
-            <Link href="/progress" className="section-link">View progress <ArrowUpRight size={14} /></Link>
-          </div>
-          <p className="section-caption">An illustrative learning history.</p>
-          <ActivitySummary />
-        </Card>
-        <Card className="p-4 sm:p-6">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="section-title">Study activity</h2>
-            <span className="text-xs text-muted-foreground">Sample week</span>
-          </div>
-          <StudyActivity />
-        </Card>
-      </div>
-      <Card className="mt-6 p-4 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="section-title">Upcoming review topics</h2>
-            <p className="section-caption">Sample upcoming topics. Automatic review scheduling is planned for Phase 2.</p>
-          </div>
-          <CalendarDays size={18} className="text-primary" />
-        </div>
-        <ul className="mt-4 divide-y divide-border">
-          {upcomingReviews.map((review) => <li key={review.title}>
-            <Link href={review.href} className="flex items-center justify-between gap-4 py-4 hover:text-primary">
-              <div>
-                <span className="text-xs text-muted-foreground">{review.label} · example</span>
-                <p className="mt-1 text-sm font-medium">{review.title}</p>
-              </div>
-              <ArrowUpRight size={16} className="text-muted-foreground" />
+      <section className="mt-6" aria-labelledby="topic-progress-title">
+        <div className="mb-2 flex items-center justify-between gap-3"><h2 id="topic-progress-title" className="section-title">Topic progress</h2><Link className="section-link" href="/learn">All topics <ArrowRight size={14} /></Link></div>
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+          {path.topicIds.map((id) => result.data.topics.find((row) => row.topicId === id)!).map((row) => <li key={row.topicId}>
+            <Link className="flex min-h-12 flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm hover:bg-muted" href={"/learn/" + row.topicId}>
+              <span className="font-medium">{topics.find((topic) => topic.id === row.topicId)?.name}</span>
+              <span className="text-xs text-muted-foreground">{row.lessonCount ? `${row.completed}/${row.lessonCount} lessons` : "Lessons coming soon"} | {row.answered} graded submissions</span>
             </Link>
           </li>)}
         </ul>
-      </Card>
-    </div>
-  );
+      </section>
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <Card className="p-4 sm:p-6"><h2 className="section-title">Recent activity</h2><p className="section-caption">Latest lesson updates and saved practice.</p><ActivitySummary activities={result.data.activity.slice(0, 10)} /><Link className="section-link mt-2" href="/progress">View progress <ArrowRight size={14} /></Link></Card>
+        <Card className="p-4 sm:p-6"><h2 className="section-title mb-4">Practice activity</h2><StudyActivity days={result.data.days} /></Card>
+      </div>
+      <p className="mt-4 text-xs leading-6 text-muted-foreground">Curriculum contains educational samples. Practice scores describe saved answers; mastery and automatic review scheduling are not assessed.</p>
+    </>}
+  </div>;
 }

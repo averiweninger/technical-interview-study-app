@@ -1,6 +1,7 @@
+import "server-only";
 import type { PracticeQuestion } from "../../features/practice/types";
 
-// All answers are intentionally public in this educational demo. This is not secure assessment grading.
+// Server-only sample bank. Previously public keys are unsuitable for mastery/secure assessments.
 export const questions: PracticeQuestion[] = [
   {
 

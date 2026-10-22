@@ -1,8 +1,8 @@
 # Developer Guide
 
-Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. The user reports successful application of the Step 3C-1 database migration and its read-only audit; independent two-account Data API isolation verification remains pending. Progress charts and study history still use explicitly labeled mock records. Persisted learning progress integration, password recovery, account deletion, AI, runner, and deployment remain unimplemented.
+Interview Compass contains the frontend prototype and Step 3B email/password authentication with Supabase SSR sessions. The user reports Step 3C migration, audit, ten two-account isolation API checks, and final fingerprint comparison passed. Step 3D now implements persistent lesson reading activity, server-graded practice/history, and shared account-specific progress metrics. Hosted application verification remains pending. Mastery, password recovery, account deletion, AI, runner, and deployment remain unimplemented.
 
-The implementation intentionally stops before the complete Phase 1 product in [PRD.md](PRD.md). The user's frontend request permits public sample answers and local grading for demonstration. Production assessment keys must move behind authenticated server workflows before real assessments are introduced.
+The implementation intentionally stops before the complete Phase 1 product in [PRD.md](PRD.md). The former public-answer/local-grading prototype has been replaced by a server-only bank and authenticated practice workflow. Previously public keys are not secure assessment content; reviewed publication and the full evidence/mastery transaction pipeline remain required.
 
 ## Stack and setup
 
@@ -17,7 +17,7 @@ npm run dev
 
 Open the local URL printed by Next.js, normally `http://localhost:3000`.
 
-Dependencies and `package-lock.json` are present; use npm as the only package manager and `npm ci` for reproducible installation. Study routes now require a signed-in Supabase user and the public variables documented below.
+Dependencies and `package-lock.json` are present; use npm as the only package manager and `npm ci` for reproducible installation. Study routes require a signed-in Supabase user and public configuration; persistent study operations also require the server-only key documented under Step 3D.
 
 ### Step 3A: Supabase connection setup
 
@@ -33,7 +33,7 @@ Verify local protection with `git check-ignore .env.local` and ensure `git ls-fi
 
 ### Step 3B: Authentication and dashboard configuration
 
-`/signup` collects first name, last name, normalized email, and password. Names are stored only in Supabase Auth metadata (`first_name`, `last_name`); no profile table is created. Verified `getUser()` data supplies the displayed name/email. Older accounts fall back to existing `full_name`/`name` metadata or the neutral label “Learner.” Metadata is display data and cannot authorize access. `/login` uses Supabase's password API; passwords are never stored, hashed, or logged by the app. `/auth/callback` exchanges PKCE codes or verifies signup/email-change token hashes. All study URLs remain protected. Logout is POST-based. Study preferences remain temporary; account names persist.
+`/signup` collects first name, last name, normalized email, and password. Names are stored only in Supabase Auth metadata (`first_name`, `last_name`); no profile table is created. Verified `getUser()` data supplies the displayed name/email. Older accounts fall back to existing `full_name`/`name` metadata or the neutral label “Learner.” Metadata is display data and cannot authorize access. `/login` uses Supabase's password API; passwords are never stored, hashed, or logged by the app. `/auth/callback` exchanges PKCE codes or verifies signup/email-change token hashes. All study URLs remain protected. Logout is POST-based. Account names and the primary career path persist; other study/appearance preferences remain temporary.
 
 Settings has a separate **Account Management** section for name updates and email-change requests. Each server action validates its inputs, checks origin/rate limits, and obtains a fresh verified actor; no client-selected account ID is used. Successful name changes revalidate the workspace immediately. Current email stays visible while `new_email` awaits confirmation. Explicit `user_already_exists` signup errors may show a duplicate-account message and login link; successful/obfuscated signup responses always use neutral wording. No user directory or database lookup is made to discover accounts. A synchronous submit guard plus pending-state controls prevent duplicate signup submissions.
 
@@ -72,7 +72,7 @@ The manual scaffold preserves the existing repository and documents. It follows 
 
 ### Step 3C-1: Prepared database migration
 
-[20261021200000_prepare_learning_records.sql](supabase/migrations/20261021200000_prepare_learning_records.sql) and [learning_records.sql](supabase/tests/learning_records.sql) were **prepared, not executed by Step 3C-1**. See Step 3C-2 below for the subsequent user-reported application. The exact staged schema and access rules are in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md#prepared-step-3c-1-subset). The app still uses mock progress; Auth/settings code is unchanged. No CLI, database packages, containers, or generated types were installed/created by that preparation step.
+[20261021200000_prepare_learning_records.sql](supabase/migrations/20261021200000_prepare_learning_records.sql) and [learning_records.sql](supabase/tests/learning_records.sql) were **prepared, not executed by Step 3C-1**. See Step 3C-2 below for the subsequent user-reported application. The exact staged schema and access rules are in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md#prepared-step-3c-1-subset). At that preparation handoff the app still used mock progress; Step 3D below replaces it. Auth/settings code was unchanged. No CLI, database packages, containers, or generated types were installed/created by that preparation step.
 
 **Apply locally later:** first review the SQL and target inventory. This initial migration intentionally fails if its tables/functions already exist; do not hide collisions with `IF NOT EXISTS`. With a supported standalone Supabase CLI, Docker, and `psql` available, follow the [official local migration workflow](https://supabase.com/docs/guides/local-development/database-migrations) in a disposable, unlinked local project. Run `supabase init` only if `supabase/config.toml` is absent, then `supabase start` (initial startup can already apply migrations). Apply any remaining migrations and inspect SQL with:
 
@@ -87,13 +87,13 @@ psql --dbname="$env:LOCAL_SUPABASE_DB_URL" --set=ON_ERROR_STOP=1 --file=supabase
 
 The SQL assertions use two owners, a third bootstrap identity, missing identity, and `anon`; they check isolation, protected columns/writes, session ownership, version consistency, invalid records, assignment uniqueness, and a synthetic deletion cascade, then roll back. They are plain `psql` assertions, not a pgTAP suite. Also verify the Data API with synthetic JWTs before enabling persistence. None of these runtime checks has run here; static review cannot establish RLS behavior. Generate types from the validated local schema using `supabase gen types typescript --local --schema public` and save the output to `src/lib/supabase/database.types.ts`; do not handwrite or guess them. Keep all connection secrets out of commits/logs.
 
-Profile bootstrap/backfill and every persistence use case remain separate work. Before wiring writes, implement verified-actor adapters, safe attempt feedback reads, reviewed content/keys, atomic grading/audit/replay/concurrency rules, and the PRD mastery algorithm. In account deletion, remove attempts before their referenced sessions and Auth identity. No interview research tables, live project link, remote push, or production application is authorized by this preparation. Any later remote application needs a backup, target/schema/history review, a reviewed migration plan, and explicit authorization; do not paste the SQL into the live dashboard now.
+At the Step 3C-1 handoff, profile bootstrap and persistence were deferred. Step 3D below now implements verified-actor profile bootstrap, lesson activity, and immutable free-practice submissions. Secure assessments and mastery still require reviewed content/keys, atomic evidence/audit/concurrency rules, and the PRD mastery algorithm. In account deletion, remove attempts before their referenced sessions and Auth identity. No interview research tables or production application are authorized by this preparation. Any later migration application needs target/schema/history review and explicit authorization; do not reapply the already-installed schema.
 
 **Rollback:** failure before `COMMIT` rolls back the migration transaction. After successful application, prefer retaining the unused schema and a reviewed forward correction. For an unwanted disposable-local installation, recreate the local database from the previous source revision, acknowledging loss of local test data. Shared environments require backup and a separately reviewed reverse migration that removes only this migration's objects in dependency order; never drop `auth.users`, the Auth schema, or an existing private schema. `migration repair` changes history and is not a database rollback. Do not edit an already-applied migration. Namespace creation and catalog seed inserts are idempotent where appropriate; the complete migration is applied once through migration history.
 
 ### Step 3C-2: Review and application handoff
 
-Review status: the user reports that the Step 3C-1 migration and read-only security audit succeeded on their Supabase project. This hosted result has not been independently observed here; the preparation-only statements above describe the earlier handoff. Do not reapply the migration or rerun preflight against the installed schema. Static review found RLS on all ten tables, owner predicates using `auth.uid()`, restricted profile-column grants, protected server-written evidence, indexed foreign keys, and same-owner session references. Lexical/structural checks, SQL documentation links, and `git diff --check` passed; these are not PostgreSQL execution or SQL parser checks. No migration SQL was changed by this review. **Authenticated Data API isolation remains unverified.** This does not complete AUTH-01's hosted isolation requirement.
+Review status: the user reports that the Step 3C-1 migration and read-only security audit succeeded on their Supabase project. This hosted result has not been independently observed here; the preparation-only statements above describe the earlier handoff. Do not reapply the migration or rerun preflight against the installed schema. Static review found RLS on all ten tables, owner predicates using `auth.uid()`, restricted profile-column grants, protected server-written evidence, indexed foreign keys, and same-owner session references. Lexical/structural checks, SQL documentation links, and `git diff --check` passed; these are not PostgreSQL execution or SQL parser checks. No migration SQL was changed by this review. **The user reports ten isolation API checks and unchanged fingerprints passed. No additional hosted checks were run here.** This does not complete AUTH-01's hosted isolation requirement.
 
 Two metadata-only SQL files support the handoff:
 
@@ -277,9 +277,84 @@ Run this procedure only in a **disposable development/staging Supabase project**
 
 5. Repeat the SQL fingerprint query from step 3. Require five identical counts/fingerprints, ten `PASS` lines (five tables in each direction), and exit code zero. A denial must be PostgreSQL `42501`; a duplicate-key/validation error is not a pass. Record the project/environment, timestamp, migration version, audit result, API result, and fingerprint comparison without emails, passwords, JWTs, or user rows. Leave fixtures in the disposable environment; this procedure performs no cleanup deletion. A failed check stops the run: inspect only test fixtures and report the failure before changing policies.
 
-**Completion and limits:** this procedure has been prepared, not executed here. Migration/audit success is user-reported; Step 3C-2 behavioral verification remains **pending** until the API run and unchanged fingerprints are confirmed. Passing proves the tested direct Data API operations for this schema/environment at that time, not every future endpoint or production readiness. Raw attempts are denied even to owners; own safe reads are positive controls. Profile bootstrap/own-profile updates, application server authorization, RPCs, Storage, token expiry/revocation, concurrent transactions, and deletion cascades are outside this small check. A disposable project's result does not independently prove the live project's behavior; compare its migration/audit configuration and keep live write probes prohibited. Use the official [password sign-in](https://supabase.com/docs/reference/javascript/auth-signinwithpassword), [verified user](https://supabase.com/docs/reference/javascript/auth-getuser), and [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) references when maintaining this procedure.
+**Completion and limits:** the user reports Step 3C migration, audit, ten isolation API checks, and unchanged fingerprints passed. This procedure remains available for reproduction; no hosted run was independently observed here. Passing proves the tested direct Data API operations for this schema/environment at that time, not every future endpoint or production readiness. Raw attempts are denied even to owners; own safe reads are positive controls. Profile bootstrap/own-profile updates, application server authorization, RPCs, Storage, token expiry/revocation, concurrent transactions, and deletion cascades are outside this small check. A disposable project's result does not independently prove the live project's behavior; compare its migration/audit configuration and keep live write probes prohibited. Use the official [password sign-in](https://supabase.com/docs/reference/javascript/auth-signinwithpassword), [verified user](https://supabase.com/docs/reference/javascript/auth-getuser), and [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) references when maintaining this procedure.
 
 Procedure validation: PowerShell and embedded JavaScript syntax checks passed, as did `git diff --check`. Offline simulations confirmed that the normal expected responses pass and foreign-read leakage, foreign-update leakage, and an unrelated duplicate-key denial fail. These simulations do not execute PostgreSQL or verify hosted RLS. No application tests/build were run for this documentation-only change.
+
+### Step 3D-1: Persistent lesson progress
+
+Lesson pages now load the authenticated learner's saved reading activity. **Start lesson** creates an owner profile only if missing and starts a lesson idempotently. Choose a section and **Save my place**, then **Resume lesson** follows the saved anchor after refresh or sign-in. **Mark lesson complete** is permanent for this version; retries/stale bookmarks cannot reset completion or its timestamp. Missing progress has an honest not-started state. Errors keep the lesson readable and offer retry; updates disable controls while pending. No lesson activity raises mastery. Step 3D below connects completion to real account summaries.
+
+The adapter in `src/server/learning/lesson-progress.ts` verifies `getUser()` at each read/write entry point, validates lesson IDs/section bounds against existing content, and rejects client-selected owners/unknown fields. It resolves shared version-1 UUIDs from the existing catalog. A private, stateless privileged client performs only actor-scoped profile/progress writes; the user's SSR client performs RLS-protected reads. Server Actions additionally check origin; mutations use a separate process-local per-user/lesson and IP burst limiter. Production still needs hosting-level distributed limits. Profile insertion, initial progress insertion, and conditional updates are individually idempotent/retry-safe, not one multi-table transaction; partial failures report an error and can be retried. Concurrent bookmarks are last-write-wins; completion wins over later bookmarks. Sample lesson content remains unreviewed and publicly readable. Version 1 must not be repurposed when publishing changed curriculum.
+
+**Manual setup:** in the same Supabase project's API Keys settings, obtain a server **secret key** (`sb_secret_...`). Add `SUPABASE_SECRET_KEY` to ignored `.env.local` and the server hosting environment; restart Next.js. Never prefix it with `NEXT_PUBLIC_`, put it in `.env.isolation.local`, paste it into chat, or use it in a browser. Keep the existing publishable URL/key and `APP_URL`. The app deliberately fails closed with a generic progress error if the server key is missing. No migration, RLS relaxation, Auth trigger, new package, or dashboard schema edit is required. See [Supabase's server administration guidance](https://supabase.com/kb/troubleshooting/performing-administration-tasks-on-the-server-side-with-the-servicerole-secret-BYM4Fa). No real key was created or edited by this task.
+
+**Verification:** focused unit tests cover validation, origins, authentication before privileged access, ownership filters, profile bootstrap, idempotent start, conditional updates, safe errors, read-back confirmation, and rate limits. Playwright uses a local synthetic Auth/PostgREST-shaped fixture (not hosted SQL) for start/bookmark/completion across refresh/logout/relogin, a second account, error/retry, viewport fit, and accessibility. Do not interpret these mocks as new PostgreSQL/RLS proof. After setting the real server key, verify the same learner flow with dedicated development accounts, ensure account B cannot see account A's markers, and follow the Step 3D summary checks below; mastery must remain unassessed. The prior Step 3C checks are user-reported; hosted application flow, multi-tab concurrency against PostgreSQL, and production limits remain unverified here. New lesson progress touches no schema, so no generated types were handwritten; generate actual schema types via the existing CLI workflow when tooling/access is available.
+
+Results (2026-10-21): all 63 unit tests passed, including nine new boundary tests. Nine focused browser cases passed across desktop/mobile/tablet; saved-bookmark screenshots were inspected and accessibility/overflow assertions passed. Lint, TypeScript, production build, and a scan of 22 production browser JavaScript files for privileged-adapter configuration/synthetic key leakage passed. Browser checks use Edge with `--workers=2`; their fixture processes needed execution outside the restricted sandbox to terminate cleanly. These results are local, not hosted persistence verification.
+
+### Step 3D: Persistent study progress
+
+**2026-10-22 dashboard diagnosis:** the local setup check reports valid-format public configuration and `server_key_missing`. Authentication can work while study persistence fails because the existing grants reserve catalog access and attempt writes for the server. Reloading alone cannot supply a missing key. No environment file was opened or edited, and no remote database request or migration was performed during this diagnosis.
+
+Run `npm run check:study` in the repository. It loads the selected local environment and reports fixed configuration status only: no values, raw errors, account access, or network requests. Missing keys, empty keys, wrong key types, and copied server placeholders fail with exit code 1. This checks format, not key validity or project matching. A successful check still requires the disposable hosted smoke test below. For that environment use `node --conditions=react-server --env-file=.env.study-test.local scripts/check-study.ts`; ordinary app/test commands never load that file automatically.
+
+To resolve the current setup blocker, obtain the **primary project's** server secret key from its API Keys settings, add `SUPABASE_SECRET_KEY` only to the existing ignored primary `.env.local`, run the check, then stop/restart the primary Next.js process and reload the dashboard. Keep the primary public URL/key and `APP_URL` unchanged. Use the disposable project's own complete configuration for hosted test work; never mix those keys or overwrite primary configuration. No schema or RLS change is needed. Server logs identify only a fixed failure stage/code; learner pages receive safe recovery messages. Framework control-flow exceptions are rethrown for Next.js to handle normally.
+
+**Implemented:** lesson bookmarks/completion; authenticated server-graded multiple-choice history; saved ungraded self-review/code drafts; account-specific dashboard, progress, topic completion, recent activity, and UTC daily submission counts. No schema change or remote execution was needed. Existing Auth, settings, lesson content, and navigation remain in place. Preferences are still temporary.
+
+The server-only sample bank is `src/data/mock/questions.ts`; `question-bank.ts` creates explicit public DTOs without keys, explanations, model answers, or solutions. `grade-answer.ts` is now server-only. Lesson checks and practice use the same authenticated submission boundary. Feedback is released only for the verified owner's committed attempt. Samples were public in the earlier prototype, so they are unsuitable for secure assessments or mastery evidence even though current browser payloads no longer contain the keys.
+
+`getStudyAccess()` verifies `getUser()` before constructing a separate stateless secret-key client. Caller-supplied owners/scores are rejected. Each submission resolves the permanent question/version UUIDs from the database, validates the answer, and computes a canonical SHA-256 hash of version + exact response. One INSERT atomically stores the finalized response and server score/feedback. The existing per-user assignment/submission unique constraints arbitrate concurrency; same-key/same-payload retries return the original committed result, while changed payloads conflict. There are no UPDATEs to finalized grades. Self-review uses `submitted` with null score/grader/feedback; it is not executed or automatically assessed. Profile bootstrap is separately idempotent. A lost response can leave a committed attempt; reload/retry recovers it without duplicating the grade.
+
+This is a bounded **free-practice** workflow, not the full timed-assessment assignment/evidence/mastery transaction. All new attempts have `response.practice_version = 1` and `evidence_eligible = false`. No mastery projection, evidence event, quota, schedule, or streak is written. Reviewed immutable publication, per-assessment assignments, correction events, and the full atomic mastery pipeline remain blocked on their separately reviewed implementation; these samples must never be used to bypass that gate.
+
+Practice restore additionally restricts rows to submitted/graded free practice with `practice_version: 1`, rejecting records from other workflows before releasing feedback.
+
+Only account-scoped random submission UUIDs are kept in sessionStorage; answers, feedback, tokens, and passwords are not stored there. Server restore verifies the currently authenticated actor. **Reset this visit / Try a new attempt** deliberately generates a new key without deleting history. Unsubmitted drafts remain temporary. With browser storage blocked or a closed tab, a new visit can create a new intentional attempt; same-request retries remain safe. The visit sidebar counts distinct questions checked in that visit, while dashboard/history count committed submissions, including intentional retakes.
+
+`getStudyProgress()` is the shared read model for dashboard/progress/topics. It uses RLS for lesson reads and a narrow verified-owner projection for raw-attempt-restricted history, filtered to this practice workflow and finalized/submitted states. It never returns raw responses or private feedback in analytics. Stable UUID keyset pages request at most 500 rows and continue until an empty page, including when the API imposes a smaller cap. Non-advancing/duplicate rows fail safely rather than inflating totals. A source reaching 10,000 actual records fails with an error instead of presenting partial totals; server aggregate RPCs can replace this bound later. Summaries are request-time/eventually consistent during concurrent writes, not a multi-table snapshot transaction. Page revalidation keeps post-save navigation fresh.
+
+Completion is measured against the six available lessons. Practice score is the average saved multiple-choice score; self-review is excluded. Daily bars count saved submissions by UTC date, not minutes studied. Recent history contains up to 20 entries and one latest update per lesson; it is not an exhaustive audit log. Mastery remains **Not assessed**. There are no fabricated streaks, estimated study-time totals, sample fallback metrics, or automatic reviews. Empty accounts show genuine zeros/empty states; unavailable data shows an error rather than zeros.
+
+**Primary application setup:** keep `.env.local` pointed at the primary project. Ensure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and server-only `SUPABASE_SECRET_KEY` all belong to that same project; keep `APP_URL` correct. Obtain a secret key through Supabase API Keys settings, store it only in ignored/server environment configuration, then restart `npm run dev`. Never use a `NEXT_PUBLIC_` secret variable. No migration, RLS relaxation, new dependency, or account-administration permission is required. See the official [API key guidance](https://supabase.com/docs/guides/getting-started/api-keys).
+
+**Keep hosted test configuration separate:** `.env.isolation.local` remains for the existing isolated API procedure and is never loaded by normal app code. To validate this new full application flow, use a separate ignored `.env.study-test.local` containing ALL five entries below, filled with the disposable project's configuration. Leave the primary `.env.local` unchanged and do not copy a primary-project secret into the test configuration.
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://DISPOSABLE_PROJECT_REF.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_DISPOSABLE_PLACEHOLDER
+SUPABASE_SECRET_KEY=sb_secret_DISPOSABLE_PLACEHOLDER
+APP_URL=http://localhost:3001
+NEXT_DIST_DIR=.next/study-test
+```
+
+Confirm the test dashboard/project reference and that `git check-ignore .env.study-test.local` lists the file. With the pinned Node version, start the separate instance without editing the primary file:
+
+```powershell
+node --env-file=.env.study-test.local node_modules/next/dist/bin/next dev --port 3001
+```
+
+Use two fresh confirmed Auth accounts in that disposable project. As A: verify empty metrics, start a lesson, save a section, refresh/resume, complete it, answer a multiple-choice question, refresh/retry, and save a self-review/code draft. Dashboard/progress must agree; a repeated submission must not increase the count. Sign out/in and verify history remains. As B: confirm A's activity/results never appear. Check anonymous/raw attempt requests and client grade/owner injection remain denied. During these **authorized successful writes**, A's profile/progress/attempt fingerprints are expected to change; B's records must remain unchanged. Do not run the old destructive SQL fixture script or modify real learner accounts. No hosted operation was performed by this development task.
+
+**Verification limitations:** local tests use synthetic Auth/PostgREST fixtures and mocked SDK transports, not PostgreSQL. Hosted app writes, database concurrency under real load, real session expiry/revocation, large-data performance, distributed production limits, and the full assessment/mastery pipeline remain unverified. SQL/CLI tooling is not available here. Generate actual database types using the existing CLI workflow when access/tooling is provided; no generated types were invented. Rate limits remain process-local and require hosting-level protection before production. Existing dependency/security limitations elsewhere in this guide still apply. Adding the server key does not enable account deletion.
+
+**Local validation (2026-10-21):** 79 unit tests passed across 12 files; content validation passed for six paths, eight topics, six lessons, and thirteen questions (structure only, not publication review). TypeScript, lint, and production build passed. The affected 45 browser cases were verified across desktop/mobile/tablet, including targeted reruns after correcting asynchronous test readiness. One additional capture run hit a generated Next.js JSON-manifest error; clearing only `.next/e2e` resolved it. Accessibility/overflow assertions and representative dashboard visual review accompany these checks. A scan of 22 production browser JavaScript files found no server-key configuration/synthetic key or private-explanation markers. These are local checks, not hosted security proof.
+
+**Changed-file map for Step 3D (including the earlier lesson slice):**
+
+**Follow-up validation (2026-10-22):** 85 unit tests passed across 13 files; structural content validation, lint, strict TypeScript, and the isolated production build passed. The complete 75-case Edge browser suite passed with two workers: desktop 25, mobile 25, tablet 25. Desktop/mobile/tablet dashboard captures were visually inspected; automated accessibility, overflow, increased-text, dark-mode, persistence, Auth/settings, retry, and isolation checks passed against local synthetic services. An initial combined run reached the unchanged shared-IP Auth limit; the runner now starts fresh app/fixture processes per viewport. Windows process-sandbox cleanup stalled an intermediate run, so the successful final browser execution used approved execution outside that sandbox. A targeted scan of 22 production client JavaScript files found no server-key configuration/synthetic-key or private-explanation markers. The local setup check confirmed `server_key_missing`; a synthetic valid-format configuration passed. None of these checks establishes hosted database behavior, and no remote schema, real account, or environment file was changed.
+
+| Area | Created or updated files |
+| --- | --- |
+| Server data flow | `src/server/learning/access.ts`, `configuration.ts`, `lesson-progress.ts`, `practice-progress.ts`, `question-bank.ts`, `study-progress.ts` |
+| Lesson feature | `src/features/curriculum/lesson-completion.tsx`, `lesson-progress-actions.ts`, `lesson-progress-types.ts`, `topic-library.tsx` |
+| Practice feature | `src/features/practice/actions.ts`, `grade-answer.ts`, `practice-workspace.tsx`, `types.ts`; `src/data/mock/questions.ts`; `src/components/learning/quiz-question.tsx` |
+| Progress UI | `src/features/progress/dashboard.tsx`, `summarize-progress.ts`, `types.ts`; `src/components/learning/activity-summary.tsx`, `topic-card.tsx`; `src/components/charts/study-activity.tsx`; `src/components/layout/app-shell.tsx` (sample-data copy) |
+| Routes | Under `src/app/(workspace)`: `learn/page.tsx`, `learn/[topicSlug]/page.tsx`, `lessons/[lessonId]/page.tsx`, `lessons/[lessonId]/loading.tsx`, `practice/page.tsx`, `progress/page.tsx`, `progress/loading.tsx`, `dashboard/loading.tsx` |
+| Tests | `tests/unit/lesson-progress.test.ts`, `practice-progress.test.ts`, `practice-actions.test.ts`, `study-progress.test.ts`, `content.test.ts`, `practice.test.ts`; `tests/e2e/lesson-progress.spec.ts`, `study-progress.spec.ts`, `learning-flow.spec.ts`, `navigation.spec.ts`; `tests/fixtures/supabase-auth-server.ts` |
+| Setup/test tooling | `scripts/check-study.ts`, `scripts/run-browser-tests.mjs`, `tests/unit/study-configuration.test.ts`; `package.json` adds redacted diagnostics and browser-process isolation without new packages |
+| Configuration/docs | `.env.example`, `playwright.config.ts`, `AGENTS.md`, `ARCHITECTURE.md`, `DATABASE_SCHEMA.md`, `DEVELOPMENT_ROADMAP.md`, `DEVELOPER_GUIDE.md`, `PRD.md`, `README.md` |
 
 ## Folder structure
 
@@ -304,10 +379,11 @@ src/
     ui/                   Button, Card, and Progress primitives
   data/mock/              Sample curriculum, lessons, questions, progress
   server/auth/            Verified identity, trusted origins, local burst limits
+  server/learning/        Verified-actor lessons, server grading, history, safe DTOs
   lib/supabase/           Stateless tooling client and cookie-aware server/proxy clients
   features/
     curriculum/           Path selection, topic filtering, content types
-    practice/             Question types, local grading, practice state
+    practice/             Safe question/result types, server actions, practice state
     progress/             Dashboard composition
     settings/             Temporary preferences and settings form
   lib/                    Shared class-name helper
@@ -317,7 +393,7 @@ tests/e2e/                Authentication, learner flows, responsiveness, accessi
 tests/fixtures/           Local synthetic Supabase Auth HTTP fixture
 ```
 
-`src/server/auth` contains the implemented auth boundary. `supabase/migrations` and `supabase/tests` contain the authorized Step 3C-1 preparation files. Migration application is user-reported; the app still has no progress persistence integration.
+`src/server/auth` contains the implemented auth boundary. `supabase/migrations` and `supabase/tests` contain the authorized Step 3C-1 preparation files. Migration application is user-reported. The Step 3D adapters above implement progress persistence against that existing schema; hosted verification remains pending.
 
 ## Routing and layouts
 
@@ -335,7 +411,7 @@ Components are Server Components by default. The lesson route renders written co
 
 A file beginning with `"use client"` defines a client boundary. Examples include the quiz form, topic filters, career-path selector, and settings. The application shell needs `usePathname()` to mark the current navigation link. Passing server-rendered page content as `children` through a Client Component does not turn every page module into a Client Component.
 
-Client code is visible to the browser. **Every question answer in this demo is intentionally public.** Hiding the answer until a button is clicked is an interface interaction, not a security boundary. Real private keys and grading must never be placed in the client question objects.
+Client code is visible to the browser. Public question DTOs exclude answer keys, solutions, and explanations. The bank and grading run behind `server-only`; feedback is returned after a verified-owner submission commits. Previously published sample answers remain unsuitable for secure assessments or mastery evidence.
 
 ## Components and data flow
 
@@ -346,26 +422,36 @@ Routes stay small and compose feature components. Shared presentation belongs in
 3. `TopicCard` receives one topic through a prop, derives its real sample lesson count, and links to its topic route.
 4. The route finds lessons by `topicId` and renders links to them.
 
-`AppShell` shares one navigation definition across the persistent desktop sidebar and mobile disclosure. Its compact header aligns with the content width. `ProfileMenu` uses native disclosure semantics and normal Tab order, with Escape/focus return and outside-click/focus-leave dismissal. It displays the verified Auth profile and links to Settings; logout reuses the existing protected server action. The dashboard keeps account details in that menu and places the sample Continue learning recommendation before its compact statistics.
+`AppShell` shares one navigation definition across the persistent desktop sidebar and mobile disclosure. Its compact header aligns with the content width. `ProfileMenu` uses native disclosure semantics and normal Tab order, with Escape/focus return and outside-click/focus-leave dismissal. It displays the verified Auth profile and links to Settings; logout reuses the existing protected server action. The dashboard keeps account details in that menu and places the saved unfinished-lesson recommendation before its compact statistics.
 
 `Button` adapts the shadcn/ui pattern. Its `variant` and `size` props choose styles. `asChild` uses Radix Slot to style a `Link` without creating a button nested around a link. `Card` provides a consistent surface. `Progress` uses native HTML progress semantics to avoid adding a chart or progress library.
+
+## Saved career-path selection
+
+Validation (2026-10-22): 90 unit tests and all 81 local browser cases passed (27 each on desktop/mobile/tablet), along with lint, TypeScript, structural content checks, and the isolated production build. New path tests cover refresh/login persistence, a separate account, Settings synchronization, selected-path dashboard/default filters, and failed-save recovery. Representative screenshots were inspected. Browser checks use synthetic services, not new hosted verification. A client-module reload interrupted one earlier name-save confirmation check; the final suite passed with source edits held steady. No additional credentials, environment changes, or database migrations are required for this fix.
+
+The former local path default reset to Software Engineering after refresh and did not affect the server dashboard. The selected path now comes from validated verified-user metadata. Choosing a path saves it through `src/features/settings/career-path-actions.ts`; Settings uses the same boundary. Controls show pending/error states and keep the previous saved selection on failure. No database migration or new environment variable is required.
+
+The dashboard displays the selected path, recommends available unfinished lessons within it in mapped subject order, and shows its topics. Study Topics defaults to that path; Practice defaults to its subjects in the same order. Explicit topic/all-topic browsing remains available. Overall completion, grades, and history are shared and are never reset by path changes. Paths still share the existing small foundational curriculum; this fix does not create new lessons. Missing/invalid saved IDs fall back to the first existing catalog path. Multi-path onboarding and other persisted preferences remain future work.
 
 ## State and persistence
 
 | State | Location | Lifetime |
 | --- | --- | --- |
 | Name and email | Supabase Auth; verified server profile passed into the provider | Persists across sessions; changes refresh the workspace |
-| Selected path, study goal, explanation level, theme | `DemoPreferencesProvider` React context | Survives client navigation; resets on refresh |
+| Primary career path | Validated `career_path_id` in Supabase Auth metadata | Persists across refresh/logout/login; changes refresh the workspace |
+| Study goal, explanation level, theme | `DemoPreferencesProvider` React context | Survives client navigation; resets on refresh |
 | Unsaved settings draft | `SettingsForm` | Until leaving the settings route |
 | Search, path filter, practice filters | Feature component state | Until leaving that route |
-| Selected quiz option, feedback, written/code draft | Question component | Until changing question or leaving |
+| Unsaved quiz option/written/code draft | Question component | Until changing question or leaving |
+| Committed answer/feedback | Supabase attempt, restored through an owner-scoped DTO using a sessionStorage UUID | Durable history; same-tab restore survives refresh |
 | Multiple-choice visit totals | `PracticeWorkspace` | Until reset, leaving the route, or refresh |
-| Lesson completion marker | `LessonCompletion` | Until leaving the lesson |
-| Dashboard/progress/history | Static fixtures | Never updated by these interactions |
+| Lesson bookmark/completion | Supabase `lesson_progress` | Persists across refresh/logout/login |
+| Dashboard/progress/history | Shared server projection of owned saved records | Loaded per request and invalidated after saves |
 
-Only the provider shares temporary study state; it has no browser-storage or database persistence. Authentication separately persists in HttpOnly cookies. Auth sessions do not make the sample progress or preferences persistent learning evidence.
+Only the provider shares temporary study state; it has no browser-storage or database persistence. Authentication separately persists in HttpOnly cookies. Lesson/practice history is persisted separately through authenticated server adapters; temporary preferences remain separate from durable learning activity.
 
-Account forms validate names and email on the server and save through Supabase Auth. Saved names update the greeting; email changes remain pending until confirmation. Study settings apply separately for the current visit and reject invalid study minutes; the path is shared with Career Paths. Theme controls apply immediately through the provider, keeping Settings and the header synchronized. Time and explanation preferences are visibly labeled inputs for future capabilities.
+Account forms validate names and email on the server and save through Supabase Auth. Saved names update the greeting; email changes remain pending until confirmation. Career-path changes from Settings and Career Paths use the same actor-only server action and persist across visits. Remaining study settings apply for the current visit and reject invalid study minutes. Theme controls apply immediately through the provider, keeping Settings and the header synchronized. Time and explanation preferences are visibly labeled inputs for future capabilities.
 
 ## How practice works
 
@@ -373,23 +459,23 @@ Account forms validate names and email on the server and save through Supabase A
 
 For multiple choice:
 
-1. The learner selects a native radio input; `selectedId` changes through `useState`.
-2. Submitting the form calls `gradeAnswer`, a small pure function.
-3. The function rejects unknown option IDs or compares the selected ID with the public demo answer.
-4. The form records feedback, disables further submission, and calls the parent's optional `onGrade` callback.
-5. `PracticeWorkspace` stores one boolean per question ID. Revisiting a question replaces its visit result rather than inflating the count. This visit accuracy is temporary and separate from mock analytics.
+1. The learner selects a native radio option. The client sends question slug, answer, and a random submission UUID to the same-origin Server Action.
+2. The server verifies Auth and input, resolves the existing question/version UUID, grades using the server-only bank, and inserts an immutable finalized attempt.
+3. Same-key/same-answer retries return the saved result; changed-answer reuse conflicts. Feedback is released only after the owned row is confirmed.
+4. The form shows feedback and disables further submission. A deliberate new attempt gets a new UUID while retaining history.
+5. The visit summary counts distinct questions checked during that visit. Dashboard/progress metrics count committed submissions, including intentional retakes.
 
 Conceptual questions accept a draft and reveal a model answer for self-review. Coding exercises accept an optional draft and reveal an example solution. Neither is graded or executed. Skipping a question does not count as answering it. The progress bar in practice indicates the current position in the question set, not knowledge mastery.
 
 ## Mock data and adding content
 
-Records link through stable string IDs. Topics are shared across career paths rather than duplicated. Lesson counts come from `lessons.ts`. Progress records intentionally describe a fictional broader learning history; they do not claim completion of the six available sample lessons. Totals are derived from the same progress records on both Dashboard and Progress.
+Records link through stable string IDs. Topics are shared across career paths rather than duplicated. Lesson counts come from `lessons.ts`. The old `data/mock/progress.ts` fixture remains for structural validation only; runtime study pages use the shared account-specific read model. New runtime content needs permanent catalog/version identities through a separately reviewed migration; do not silently invent mappings or reuse version 1.
 
 To add a topic:
 
 1. Add a `Topic` record to `src/data/mock/curriculum.ts` with a unique kebab-case ID, description, category, difficulty, symbol, and accent.
 2. Add its ID to appropriate career paths' `topicIds` arrays.
-3. Add one illustrative `topicProgress` row with a valid completion percentage and consistent answer totals. Use `Not assessed` when there are no sample attempts.
+3. Update structural fixtures if needed by the validator; do not add fictional runtime progress. New learners start with genuine empty activity.
 4. Add lessons and questions, or let the topic's existing empty state explain that lessons are still in development.
 
 To add a lesson:
@@ -415,24 +501,26 @@ The shell uses a desktop sidebar from 768px upward and a native disclosure menu 
 
 ## Future integrations
 
-Verified Supabase identity now exists. When data integration is authorized, replace public demo grades with owned assignments, private keys, atomic grading, and the PRD mastery policy. Create migrations and generated database types rather than mapping frontend interfaces directly onto assumed tables.
+Verified Supabase identity and free-practice persistence now exist. A future authorized slice must add reviewed publication, formal assignments, private assessment keys, atomic evidence/mastery grading, and the PRD mastery policy. Create migrations and generated database types rather than mapping frontend interfaces directly onto assumed tables.
 
 AI calls will belong in guarded `src/server/ai/` adapters with grounded context and budget controls. They must not be added directly to Client Components. The Tutor, Practice, Assessment, and Planner boundaries in the architecture remain ordinary application capabilities. Executable Python/SQL and Monaco remain Phase 3 work, using a managed isolated runner outside the application and production database.
 
 ## Commands and verification
 
-| Command | Purpose | Status in this session |
-| --- | --- | --- |
-| `npm install` | Resolve dependencies and create the first lockfile | Blocked by registry access; offline attempt found no cache |
-| `npm run dev` | Start local Next.js development | Requires installed dependencies |
-| `npm run typecheck` | Check strict TypeScript types | Requires installed dependencies |
-| `npm run lint` | Run ESLint independently of the build | Requires installed dependencies |
-| `npm run test:content` | Validate fixture relationships and metadata with Node 24 | Passed |
-| `npm test` | Run Vitest grading and content tests | Requires installed dependencies |
-| `npx playwright install chromium` | Install the test browser after dependency setup | Not run; requires package/browser access |
-| `npm run test:e2e` | Run learner flows at 360px, 768px, and 1440px, including axe checks | Requires dependencies and Chromium |
-| `npm run build` | Produce a production build | Requires installed dependencies |
-| `npm start` | Serve an existing production build | Requires a successful build |
+The browser command runs desktop, mobile, and tablet in separate Playwright invocations, each with a fresh local app/fixture. This prevents the complete 75-case run from consuming one shared localhost IP's ten-minute Auth budget. Production Auth limits remain unchanged; there is no test bypass in application code. Explicit `--project` selections are forwarded as one invocation. Browser-test artifacts are replaced per invocation; screenshots selected for the handoff are saved separately.
+
+| Command | Purpose |
+| --- | --- |
+| `npm ci` | Reproduce installed dependencies from the existing lockfile |
+| `npm run dev` | Start local Next.js development |
+| `npm run check:study` | Redacted local study configuration check; no network |
+| `npm run typecheck` | Strict TypeScript checks |
+| `npm run lint` | ESLint |
+| `npm run test:content` | Structural sample-content validation |
+| `npm test` | Deterministic unit/security-boundary checks |
+| `npm run test:e2e -- --workers=2` | Synthetic local browser regression suite; use installed Edge with `PLAYWRIGHT_CHANNEL=msedge` |
+| `npm run build` | Production build; use `NEXT_DIST_DIR=.next/e2e` in the shell to isolate it from a running primary dev server |
+| `npm start` | Serve the corresponding completed build |
 
 The configured TypeScript, lint, unit, build, and browser checks are available with installed dependencies. Auth unit tests cover schemas, safe redirects/origins, cookie settings, limits, actions, proxy refresh, and callback failures. Browser auth checks use only the local synthetic fixture; passing them does not establish hosted email delivery or production configuration.
 
@@ -447,7 +535,9 @@ Browser tests cover selection/filtering, lesson navigation, correct and incorrec
 - **Port 3000 is occupied:** run `npm run dev -- --port 3001` and set `APP_URL=http://localhost:3001`. E2E uses separate ports 3100/54329 and a separate build cache.
 - **A topic has no lessons:** this is an intentional empty state. Add content in `lessons.ts` and link it to the correct topic ID.
 - **Preferences disappeared:** temporary state resets on refresh and full-page navigation. Use app links to preserve it within a visit.
-- **Quiz totals do not match the dashboard:** visit results are real temporary UI interactions; the dashboard is an independent illustrative fixture.
+- **Quiz totals do not match the dashboard:** visit totals count distinct questions checked in this visit; dashboard totals count saved submissions across visits, including intentional retakes.
+- **Study progress is unavailable:** run `npm run check:study`; the current diagnosed blocker is a missing server secret key. After correcting configuration, restart Next.js. If format checks pass, inspect the fixed server stage/code and verify the same-project catalog/grants in a disposable environment; do not rerun migrations or relax RLS.
+- **Browser cannot connect to localhost:** ensure the terminal running `npm run dev` is still active and use its printed URL. Connection refusal means the server/port is unavailable; it differs from an authenticated progress error.
 - **Cannot execute a coding solution:** execution is deliberately absent. The text area is a draft editor only.
 
-Next verify the hosted Auth/dashboard configuration manually. Application tables, RLS, persistent progress, password recovery, and deletion require their own authorized slice; Step 3 is not complete.
+Next configure the missing primary server key and verify the application flow with separate disposable hosted accounts. Password recovery, deletion, reviewed publication, and mastery remain separate work; Step 3 and the Phase 1 release gate are not complete.

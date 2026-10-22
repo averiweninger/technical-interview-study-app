@@ -1,8 +1,8 @@
 # Interview Compass
 
-Interview Compass is an AI-powered adaptive learning platform in development, designed to help students and professionals prepare for technical interviews. The current frontend prototype connects educational sample lessons, interactive practice, and illustrative progress displays. The long-term plan adds grounded AI tutoring and evidence-based personalization.
+Interview Compass is an AI-powered adaptive learning platform in development, designed to help students and professionals prepare for technical interviews. The current application connects educational sample lessons, server-checked practice, and persistent account-specific progress displays. The long-term plan adds grounded AI tutoring and evidence-based personalization.
 
-**Status:** Initial development stage with email/password signup, login, confirmation, logout, and protected study routes using Supabase SSR sessions (Step 3B). Step 3C-1 prepares an unapplied database migration and local SQL checks; see [the developer guide](DEVELOPER_GUIDE.md#step-3c-1-prepared-database-migration). Progress remains illustrative; no application database changes or persistence integration have been executed. Password recovery, OpenAI, code execution, and deployment are not implemented. Hosted email delivery and dashboard configuration require verification. This is not the complete Phase 1 MVP.
+**Status:** Initial development stage with email/password signup, login, confirmation, logout, and protected study routes using Supabase SSR sessions (Step 3B). The user reports Step 3C database migration/security checks passed. Step 3D implements saved lesson progress, immutable practice history, and real dashboard/progress metrics; configure its server-only key using [the developer guide](DEVELOPER_GUIDE.md#step-3d-persistent-study-progress). Mastery is explicitly not assessed. Password recovery, OpenAI, code execution, and deployment are not implemented. Hosted email delivery and dashboard configuration require verification. This is not the complete Phase 1 MVP.
 
 ## Frontend Prototype
 
@@ -10,17 +10,17 @@ Signup stores first/last names in Supabase Auth metadata. The workspace shows th
 
 | Page | Implemented in source |
 | --- | --- |
-| Dashboard | Welcome, sample study statistics, topic cards, activity, and an illustrative review queue |
-| Career Paths | Six selectable paths, associated topics, and temporary selection shared with Settings |
+| Dashboard | Continue an unfinished lesson, account-specific completion/practice metrics, compact topic rows, and recent activity |
+| Career Paths | Six selectable paths, saved account preference, and matching dashboard/study/practice focus |
 | Study Topics | Search, path filtering, topic details, real sample lesson counts, and useful empty states |
-| Lessons | Six substantive lessons, code examples, objectives, knowledge checks, and previous/next navigation |
-| Practice | Multiple-choice feedback, conceptual self-review, and display-only Python/SQL exercise drafts |
-| Progress | Clearly labeled sample completion, accuracy, mastery labels, activity, and topic comparisons |
-| Settings | Temporary profile, career path, study preferences, and light/dark theme |
+| Lessons | Six sample lessons, objectives/examples/checks, saved reading positions and completion, and previous/next navigation |
+| Practice | Authenticated server grading, retry-safe saved submissions, conceptual self-review, and unexecuted saved Python/SQL drafts |
+| Progress | Saved completion, descriptive practice scores, UTC submission activity, and topic comparisons with no invented mastery |
+| Settings | Persistent Auth name/email/career path, temporary study preferences, and light/dark theme |
 
-Navigation, filters, answer feedback, and preferences use React state. Preferences survive client navigation and reset on refresh. Quiz drafts and lesson markers reset when leaving their question or lesson. Dashboard statistics and mastery labels remain fictional fixtures and never represent the visitor's answers.
+Navigation, filters, answer feedback, and preferences use React state. Your primary career path persists across refresh and sign-in. Other study/appearance preferences survive client navigation and reset on refresh. Quiz drafts reset when leaving their question. Lesson bookmarks and completion are stored in Supabase when server configuration is complete. Dashboard/progress metrics describe saved account activity; missing configuration produces an error, not fictional fallback metrics. Mastery remains unassessed.
 
-The sample library includes eight topic categories and six lessons covering Python variables, loops, lists, SQL SELECT, SQL JOIN, and Big O. Other categories show an honest empty state. All thirteen practice questions and their answers are public demonstration content; local quiz feedback is not secure server grading. Coding drafts are never executed.
+The sample library includes eight topic categories and six lessons covering Python variables, loops, lists, SQL SELECT, SQL JOIN, and Big O. Other categories show an honest empty state. The thirteen sample questions support server-graded multiple choice and ungraded self-review; keys and solutions are excluded from initial browser payloads. The keys were previously public, so these samples cannot establish secure assessment evidence. Coding drafts are never executed.
 
 ## Project Purpose
 
@@ -63,7 +63,7 @@ This is shared foundational coverage. Phase 1 Python and SQL preparation will us
 
 ## Planned Technology Stack
 
-The frontend uses Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned and an npm lockfile is present. Official Supabase JavaScript/SSR clients provide email authentication; Zod validates forms on the server. Study data integration, OpenAI, Monaco, the runner, and hosting remain planned.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, shadcn/ui primitives, and Lucide React. Node and npm are pinned and an npm lockfile is present. Official Supabase JavaScript/SSR clients provide email authentication and persistent study data; Zod validates server inputs. OpenAI, Monaco, the runner, and hosting remain planned.
 
 | Technology | Intended role |
 | --- | --- |
@@ -113,7 +113,7 @@ The frontend foundation and Step 3B authentication are implemented. The three fu
 
 | Phase | Planned deliverable | Status |
 | --- | --- | --- |
-| **1 — Functional MVP** | Authentication, path selection and optional interview date, minimum reviewed curriculum, single-choice quizzes, basic dashboard/history, settings, and account deletion | Authentication and sample frontend implemented; persistent MVP remains planned |
+| **1 — Functional MVP** | Authentication, path selection and optional interview date, minimum reviewed curriculum, single-choice quizzes, basic dashboard/history, settings, and account deletion | Authentication and sample persistence implemented; hosted verification, reviewed content, deletion, and remaining MVP gates pending |
 | **2 — Adaptive Learning** | Interview research, grounded tutoring with usage limits, diagnostics, capacity-aware study plans, adaptive difficulty, spaced repetition, expanded analytics, and reviewed AI draft tooling | Planned; follows a stable Phase 1 |
 | **3 — Advanced Interview Preparation** | Monaco-based Python/SQL practice with managed isolation, timed mocks, text interview simulations, and advanced reports | Planned; follows Phase 2 and runner verification |
 
@@ -130,7 +130,7 @@ npm run dev
 
 Open the URL printed by Next.js, normally `http://localhost:3000`. The root route opens the dashboard.
 
-Keep the existing `.env.local`, or copy `.env.example` into it on a new checkout and replace the public Supabase URL and publishable-key placeholders. Set `APP_URL` to the application origin (required in production; HTTPS outside localhost). Development defaults to `http://localhost:3000`. Open `/signup` or `/login`; signed-in users can sign out from the workspace header. Configure email confirmation and redirect URLs using [the authentication setup guide](DEVELOPER_GUIDE.md#step-3b-authentication-and-dashboard-configuration). `.env.local` stays ignored. `npm run check:supabase` only verifies stateless local client initialization, not hosted authentication or database access.
+Keep the existing `.env.local`, or copy `.env.example` into it on a new checkout and replace the public Supabase URL and publishable-key placeholders. Set `APP_URL` to the application origin (required in production; HTTPS outside localhost). Development defaults to `http://localhost:3000`. Open `/signup` or `/login`; signed-in users can sign out from the workspace header. Configure email confirmation and redirect URLs using [the authentication setup guide](DEVELOPER_GUIDE.md#step-3b-authentication-and-dashboard-configuration). For saved study progress, also configure `SUPABASE_SECRET_KEY` from the same primary project and restart Next.js; `npm run check:study` diagnoses missing/invalid-format setup without displaying values. Keep disposable hosted-test settings in their separate ignored environment file. `.env.local` stays ignored. `npm run check:supabase` only verifies stateless local client initialization, not hosted authentication or database access.
 
 | Command | Purpose |
 | --- | --- |
@@ -138,6 +138,7 @@ Keep the existing `.env.local`, or copy `.env.example` into it on a new checkout
 | `npm run typecheck` | Strict TypeScript checks |
 | `npm run lint` | ESLint checks |
 | `npm run test:content` | Dependency-free fixture integrity checks with Node 24 |
+| `npm run check:study` | Redacted local study setup check; no network; missing server key must be configured and Next.js restarted |
 | `npm run check:supabase` | Redacted local initialization check using `.env.local`; no network requests |
 | `npm test` | Vitest grading and content-integrity tests |
 | `npm run test:e2e` | Playwright learner flows and accessibility checks; requires Chromium |

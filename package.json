@@ -15,9 +15,10 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:content": "node scripts/validate-content.ts",
+    "test:content": "node --conditions=react-server scripts/validate-content.ts",
     "check:supabase": "node --env-file=.env.local scripts/check-supabase.ts",
-    "test:e2e": "playwright test"
+    "check:study": "node --conditions=react-server --env-file-if-exists=.env.local scripts/check-study.ts",
+    "test:e2e": "node scripts/run-browser-tests.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

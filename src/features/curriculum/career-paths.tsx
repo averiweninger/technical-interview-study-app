@@ -1,16 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import { useRef, useState, useTransition } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { careerPaths, topics } from "@/data/mock/curriculum";
 import { useDemoPreferences } from "@/features/settings/demo-preferences";
+import { saveCareerPath } from "@/features/settings/career-path-actions";
 
 export function CareerPaths() {
-  const { preferences, updatePreferences } = useDemoPreferences();
+  const { preferences } = useDemoPreferences();
   const selected = careerPaths.find((path) => path.id === preferences.careerPathId) ?? careerPaths[0];
+  const [pending, startTransition] = useTransition();
+  const [feedback, setFeedback] = useState<{ status: "success" | "error"; message: string } | null>(null);
+  const busy = useRef(false);
+
+  function choosePath(pathId: string) {
+    if (busy.current || pathId === selected.id) return;
+    busy.current = true;
+    startTransition(async () => {
+      try { setFeedback(await saveCareerPath({ pathId })); }
+      catch { setFeedback({ status: "error", message: "Your career path could not be saved. Please try again." }); }
+      finally { busy.current = false; }
+    });
+  }
 
   return (
     <>
@@ -35,7 +50,8 @@ export function CareerPaths() {
               size="sm"
               aria-pressed={selected.id === path.id}
               aria-label={selected.id === path.id ? `Selected path: ${path.name}` : `Choose ${path.name}`}
-              onClick={() => updatePreferences({ careerPathId: path.id })}>
+              disabled={pending}
+              onClick={() => choosePath(path.id)}>
               {selected.id === path.id ? <><Check />Selected</> : "Choose"}
             </Button>
           </Card>
@@ -45,7 +61,8 @@ export function CareerPaths() {
         <div aria-live="polite">
           <p className="eyebrow">Selected path</p>
           <h2 id="selected-path-title" className="text-lg font-semibold">{selected.name}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Shared with Settings for this visit. Refreshing restores the demo default.</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Saved to your account. Your dashboard and study topics follow this path.</p>
+          {(pending || feedback) && <p className="mt-2 text-sm" role={feedback?.status === "error" && !pending ? "alert" : "status"}>{pending ? "Saving career path..." : feedback?.message}</p>}
           <ul className="mt-4 divide-y divide-border" aria-label="Associated topics">
             {selected.topicIds.map((id) => <li key={id}>
               <Link className="section-link w-full justify-between py-2" href={`/learn/${id}`}>

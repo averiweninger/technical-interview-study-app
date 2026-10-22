@@ -8,7 +8,7 @@ test("compact navigation and account disclosure support keyboard, dismissal, and
   await expect(page.getByText("Demo workspace.")).toHaveCount(0);
   await expect(page.getByRole("main").getByText("Learner", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("navigation", { includeHidden: true }).getByRole("link", { name: "Settings", exact: true, includeHidden: true })).toHaveCount(0);
-  const stats = page.getByRole("region", { name: "Sample study statistics" }).locator(":scope > div");
+  const stats = page.getByRole("region", { name: "Your study statistics" }).locator(":scope > div");
   const heights = await stats.evaluateAll((cards) => cards.map((card) => card.getBoundingClientRect().height));
   expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1);
 

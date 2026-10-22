@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="hidden text-sm font-medium md:block">{pageLabel}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <span className="demo-indicator hidden sm:inline" title="Progress and activity are sample data. Study preferences and practice answers reset on refresh.">Demo data</span>
+              <span className="demo-indicator hidden sm:inline" title="Educational sample curriculum. Your saved activity is personal; study preferences remain temporary.">Sample curriculum</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -105,13 +105,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main id="main-content" className="page-content" tabIndex={-1}>
-          <p className="demo-indicator mb-2 sm:hidden">Demo data · study progress is illustrative</p>
+          <p className="demo-indicator mb-2 sm:hidden">Educational sample curriculum</p>
           {(confirmation === "signup" || confirmation === "email") && <p role="status" className="feedback mt-6 text-sm">
             {confirmation === "signup" ? "Your email has been confirmed. Welcome to your study workspace."
               : account.pendingEmail ? "Confirmation accepted. Complete any remaining email links to finish your email change." : "Your email address has been confirmed."}
           </p>}
           {children}
-          <footer className="page-footer"><span>Interview Compass</span><span>Educational preview · sample data</span></footer>
+          <footer className="page-footer"><span>Interview Compass</span><span>Educational preview</span></footer>
         </main>
       </div>
     </>

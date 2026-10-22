@@ -14,7 +14,7 @@ export default defineConfig({
     { name: "tablet", use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } } },
   ],
   webServer: [{
-    command: "node tests/fixtures/supabase-auth-server.ts",
+    command: "node --conditions=react-server tests/fixtures/supabase-auth-server.ts",
     url: "http://127.0.0.1:54329/health",
     reuseExistingServer: false,
   }, {
@@ -26,6 +26,7 @@ export default defineConfig({
       NEXT_DIST_DIR: ".next/e2e",
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_synthetic_e2e_only",
+      SUPABASE_SECRET_KEY: "sb_secret_synthetic_e2e_only",
     },
     reuseExistingServer: false,
     timeout: 120_000,

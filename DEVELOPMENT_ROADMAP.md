@@ -1,8 +1,30 @@
 # Development roadmap
 
-Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, design system, Step 3A connection utilities, and Step 3B email/password authentication flow exist. Step 3B includes cookie session refresh, server-side route checks, logout, and email confirmation; hosted email delivery and dashboard configuration still require verification. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. Step 3C-1 now prepares an unapplied identity/progress migration and local SQL checks; no database or application integration has run. Persistent learning evidence, password recovery, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
+Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, design system, Step 3A connection utilities, and Step 3B email/password authentication flow exist. Step 3B includes cookie session refresh, server-side route checks, logout, and email confirmation; hosted email delivery and dashboard configuration still require verification. This is partial foundation work, not completion of Step 3, P1-A, or a Phase 1 exit gate. The user reports Step 3C migration/audit/two-user isolation/fingerprint checks passed. Step 3D implements persistent lesson activity, immutable server-graded practice history, and shared account-specific progress displays using existing grants. Hosted validation requires the correct server-only key and dedicated accounts. Independent mastery evidence, password recovery, AI, the reviewed launch bank, and deployment remain unimplemented. Later phases remain deferred. See README.md and DEVELOPER_GUIDE.md for setup and verification.
 
 ## Delivery strategy and implementation sequence
+
+### Career-path selection follow-up
+
+Validation: 90 unit tests, 81 local browser cases, lint, TypeScript, content checks, and production build passed. Actual hosted preference verification remains a user smoke check; local tests use synthetic accounts only.
+
+Implemented a durable, verified-owner primary path in existing Auth metadata, workspace revalidation, path-specific dashboard recommendations/topics, and saved-path defaults for the library/practice. Preserved shared completion/history and explicit all-topic browsing. No schema or remote migration is required. Multi-path selection, optional interview date, and remaining onboarding preferences are still separate work.
+
+### Step 3D implementation handoff
+
+2026-10-22 follow-up: diagnosed the local dashboard setup failure as `server_key_missing` using a redacted, network-free `check:study` command. Added safe server diagnostics, placeholder validation, workflow-restricted practice restore, and pagination that continues below provider row caps and rejects repeated rows. Hosted validation remains blocked on the user configuring the same primary-project server secret and a separate disposable test environment. No environment files or remote schemas were edited.
+
+| Slice | Implemented in source | Remaining gate |
+| --- | --- | --- |
+| 1. Lessons | Verified-owner bootstrap, stable IDs, saved start/bookmark/resume/completion and retry-safe updates | Hosted smoke test with the correct server key; no new migration |
+| 2. Practice history | Server-only keys/grading, safe DTOs, immutable atomic attempt inserts, canonical hashes, concurrent unique-key retries, account-scoped restore, ungraded saved drafts | Hosted concurrency/constraint checks; reviewed immutable content and formal assessment assignment remain separate work |
+| 3. Progress UI | Shared account summaries, compact dashboard topics, real completion/average scores, recent updates, UTC submission chart, honest empty/error states | Larger hosted histories; summaries fail safely at 10,000 rows per source |
+| 4. Security/reliability | Fresh verified Auth, same-origin actions, private server client, owner filters/DTO validation, write limits, no raw learner attempt access or client-selected grades/owners | Distributed production limits and broader release checks remain required |
+| 5. Validation/docs | Focused unit/browser/content checks and separate primary/test configuration instructions | Hosted application evidence remains pending; local fixtures are not production verification |
+
+Local follow-up results (2026-10-22): 85 unit tests, 75 browser cases (25 per viewport with fresh test servers), structural content validation, lint, TypeScript, and production build passed. The missing primary server key and disposable hosted application/concurrency checks remain open; these local results do not complete the full Phase 1 gate.
+
+No remote migrations or real-account mutations were performed. Free-practice records set `evidence_eligible = false`; there is no mastery recomputation, evidence event ledger, scheduled review, study-time tracking, or streak calculation. Do not enable mastery from these previously public sample keys. Next: validate this application flow with disposable hosted accounts, then prepare the reviewed content/evidence transaction slice before claiming full QUIZ-01/PROG-01.
 
 Keep one Next.js application, one Supabase project per environment, and the three module boundaries in [ARCHITECTURE.md](ARCHITECTURE.md). Reuse the functioning frontend and shared curriculum. Steps 1–2 refer to the existing planning/frontend foundation; verify affected setup and checks for each implementation task.
 

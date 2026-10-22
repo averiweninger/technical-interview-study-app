@@ -9,16 +9,21 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { QuizQuestion } from "@/components/learning/quiz-question";
 import { topics } from "@/data/mock/curriculum";
-import { questions } from "@/data/mock/questions";
+import type { PublicPracticeQuestion } from "./types";
+import { useDemoPreferences } from "@/features/settings/demo-preferences";
+import { getCareerPath } from "@/features/curriculum/career-path-selection";
 
-export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) {
-  const [topicId, setTopicId] = useState(topics.some((topic) => topic.id === initialTopic) ? initialTopic! : "all");
+export function PracticeWorkspace({ initialTopic, questions, accountId }: { initialTopic?: string; questions: PublicPracticeQuestion[]; accountId: string }) {
+  const { preferences } = useDemoPreferences();
+  const path = getCareerPath(preferences.careerPathId);
+  const [topicId, setTopicId] = useState(topics.some((topic) => topic.id === initialTopic) ? initialTopic! : "path");
   const [kind, setKind] = useState("all");
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [restartCount, setRestartCount] = useState(0);
   const [finished, setFinished] = useState(false);
-  const filtered = questions.filter((question) => (topicId === "all" || question.topicId === topicId) && (kind === "all" || question.kind === kind));
+  const orderedQuestions = topicId === "path" ? path.topicIds.flatMap((id) => questions.filter((question) => question.topicId === id)) : questions;
+  const filtered = orderedQuestions.filter((question) => (topicId === "path" || topicId === "all" || question.topicId === topicId) && (kind === "all" || question.kind === kind));
   const question = filtered[index];
   const graded = Object.values(answers);
   const correct = graded.filter(Boolean).length;
@@ -36,6 +41,8 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
   }
 
   function restartPractice() {
+    // Retaking creates new idempotency keys; saved server history is never deleted.
+    try { questions.forEach((item) => sessionStorage.removeItem(`ic:practice:${accountId}:practice:${item.id}`)); } catch { /* Storage can be unavailable. */ }
     setIndex(0);
     setFinished(false);
     setAnswers({});
@@ -53,6 +60,7 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
           <div>
             <label htmlFor="practice-topic" className="field-label">Topic</label>
             <select id="practice-topic" className="field" value={topicId} onChange={(event) => changeFilter("topic", event.target.value)}>
+              <option value="path">{path.name} topics</option>
               <option value="all">All topics</option>
               {topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
             </select>
@@ -83,7 +91,7 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
             <span>Question {index + 1} of {filtered.length}</span>
           </div>
           <Progress value={(index + 1) / filtered.length * 100} label="Position in sample question set" className="mb-6" />
-          <QuizQuestion key={`${question.id}-${restartCount}`} question={question} onGrade={recordGrade} />
+          <QuizQuestion key={`${question.id}-${restartCount}`} question={question} accountId={accountId} onGrade={recordGrade} />
           <div className="mt-7 flex justify-between gap-3 border-t border-border pt-5">
             <Button variant="outline" disabled={index === 0} onClick={() => setIndex((current) => current - 1)}><ArrowLeft />Previous</Button>
             <Button onClick={() => index + 1 < filtered.length ? setIndex((current) => current + 1) : setFinished(true)}>
@@ -91,13 +99,13 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
               <ArrowRight />
             </Button>
           </div>
-          <p className="mt-3 text-xs leading-6 text-muted-foreground">You can skip questions. Leaving a question clears its draft; returning starts a fresh form.</p>
+          <p className="mt-3 text-xs leading-6 text-muted-foreground">Unsubmitted drafts clear when you leave. Saved answers return until you reset this visit.</p>
         </Card>}
       </div>
       <aside className="space-y-6">
         <Card className="p-5">
           <h2 className="section-title">This practice visit</h2>
-          <p className="section-caption">Temporary multiple-choice results.</p>
+          <p className="section-caption">Checked this visit. Cumulative results are saved to your history.</p>
           <div role="status" className="mt-5 grid grid-cols-2 gap-3">
             <div><p className="text-2xl font-semibold">{graded.length}</p><p className="mt-1 text-xs text-muted-foreground">Answered</p></div>
             <div>
@@ -109,7 +117,7 @@ export function PracticeWorkspace({ initialTopic }: { initialTopic?: string; }) 
         </Card>
         <div className="callout">
           <h2 className="mb-2 font-semibold">About this practice</h2>
-          <p>Answers are public demo content. Self-review and coding exercises are ungraded. Your practice does not update the sample progress page.</p>
+          <p>Answers are checked on the server and saved to your account. Self-review and coding drafts are ungraded. Sample practice results do not establish mastery.</p>
           <Link className="section-link mt-4" href="/learn">Revisit a lesson <ArrowRight size={14} /></Link>
         </div>
       </aside>

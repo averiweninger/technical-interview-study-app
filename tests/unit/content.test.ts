@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { careerPaths, topics } from "../../src/data/mock/curriculum";
 import { lessons } from "../../src/data/mock/lessons";
 import { questions } from "../../src/data/mock/questions";

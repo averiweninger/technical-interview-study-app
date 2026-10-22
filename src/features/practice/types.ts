@@ -28,3 +28,14 @@ export interface CodingQuestion extends QuestionBase {
 }
 
 export type PracticeQuestion = MultipleChoiceQuestion | ShortAnswerQuestion | CodingQuestion;
+
+// Explicit public shapes: never serialize the full server question bank into a Client Component.
+type PublicBase = Pick<QuestionBase, "id" | "topicId" | "difficulty" | "prompt">;
+export type PublicPracticeQuestion =
+  | (PublicBase & Pick<MultipleChoiceQuestion, "kind" | "options">)
+  | (PublicBase & Pick<ShortAnswerQuestion, "kind">)
+  | (PublicBase & Pick<CodingQuestion, "kind" | "language" | "example">);
+export type SavedPractice =
+  | { status: "saved"; kind: "graded"; selectedId: string; correctOptionId: string; isCorrect: boolean; explanation: string }
+  | { status: "saved"; kind: "self-review"; draft: string; solution: string; explanation: string };
+export type PracticeResult = SavedPractice | { status: "empty" } | { status: "error"; message: string };

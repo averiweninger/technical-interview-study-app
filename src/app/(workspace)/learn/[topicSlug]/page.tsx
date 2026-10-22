@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { topics } from "@/data/mock/curriculum";
 import { lessons } from "@/data/mock/lessons";
 import { questions } from "@/data/mock/questions";
-import { topicProgress } from "@/data/mock/progress";
+import { getStudyProgress } from "@/server/learning/study-progress";
 
 export function generateStaticParams() {
   return topics.map((topic) => ({ topicSlug: topic.id }));
@@ -19,7 +19,9 @@ export default async function TopicPage({ params }: { params: Promise<{ topicSlu
   const topic = topics.find((item) => item.id === topicSlug);
   if (!topic) notFound();
   const availableLessons = lessons.filter((lesson) => lesson.topicId === topic.id);
-  const progress = topicProgress.find((row) => row.topicId === topic.id);
+  const study = await getStudyProgress();
+  const progress = study.status === "ready" ? study.data.topics.find((row) => row.topicId === topic.id) : null;
+  const completion = progress?.lessonCount ? Math.round(progress.completed / progress.lessonCount * 100) : 0;
   const hasPractice = questions.some((question) => question.topicId === topic.id);
 
   return (
@@ -32,11 +34,11 @@ export default async function TopicPage({ params }: { params: Promise<{ topicSlu
         action={hasPractice ? <Button asChild><Link href={`/practice?topic=${topic.id}`}>Practice this topic <ArrowRight /></Link></Button> : undefined} />
       <Card className="mb-6 p-5">
         <div className="mb-3 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Illustrative topic completion</span>
-          <span className="font-semibold">{progress?.completion ?? 0}%</span>
+          <span className="text-muted-foreground">Lesson completion</span>
+          <span className="font-semibold">{study.status === "ready" ? `${completion}%` : "Unavailable"}</span>
         </div>
-        <Progress label={`${topic.name} sample completion`} value={progress?.completion ?? 0} />
-        <p className="mt-3 text-xs text-muted-foreground">This sample indicator is independent of the lessons you open or answers you submit.</p>
+        {study.status === "ready" ? <Progress label={`${topic.name} lesson completion`} value={completion} /> : <p role="alert" className="text-sm">{study.message}</p>}
+        <p className="mt-3 text-xs text-muted-foreground">Saved reading completion; this does not represent mastery.</p>
       </Card>
       <h2 className="section-title mb-4">Available sample lessons</h2>
       {availableLessons.length ? <ol className="space-y-3">

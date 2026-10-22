@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 import { Check, Monitor, SlidersHorizontal } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { careerPaths } from "@/data/mock/curriculum";
 import { useDemoPreferences, type DemoPreferences } from "./demo-preferences";
 import { AccountManagement, DeleteAccountUnavailable } from "./account-management";
+import { saveCareerPath } from "./career-path-actions";
 
 export function SettingsForm() {
   const { preferences, updatePreferences } = useDemoPreferences();
@@ -18,33 +19,46 @@ export function SettingsForm() {
     explanationLevel: preferences.explanationLevel,
   });
   const [message, setMessage] = useState("");
+  const [pending, startTransition] = useTransition();
+  const busy = useRef(false);
 
   function savePreferences(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy.current) return;
     if (!Number.isInteger(draft.dailyMinutes) || draft.dailyMinutes < 5 || draft.dailyMinutes > 240) {
       setMessage("Choose a whole number of minutes between 5 and 240."); return;
     }
     if (!careerPaths.some((path) => path.id === draft.careerPathId)) {
       setMessage("Choose one of the available career paths."); return;
     }
-    updatePreferences(draft);
-    setMessage("Preferences applied for this visit. Refreshing restores the demo defaults.");
+    busy.current = true;
+    startTransition(async () => {
+      try {
+        if (draft.careerPathId !== preferences.careerPathId) {
+          const saved = await saveCareerPath({ pathId: draft.careerPathId });
+          if (saved.status === "error") { setMessage(saved.message); return; }
+        }
+        updatePreferences({ dailyMinutes: draft.dailyMinutes, explanationLevel: draft.explanationLevel });
+        setMessage("Career path saved. Other study preferences apply for this visit.");
+      } catch { setMessage("Your career path could not be saved. Please try again."); }
+      finally { busy.current = false; }
+    });
   }
 
   return <>
     <PageHeading
       eyebrow="Workspace"
       title="Settings"
-      description="Manage your account and adjust temporary study preferences and appearance." />
+      description="Manage your account, saved career path, and study preferences." />
     <AccountManagement />
-    <form onSubmit={savePreferences} className="max-w-3xl space-y-6">
+    <form onSubmit={savePreferences} aria-busy={pending} className="max-w-3xl space-y-6">
       <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><SlidersHorizontal size={18} className="text-primary" />Study preferences</h2>
-        <p className="section-caption">The career path is shared with Career Paths. Time and explanation preferences preview future planner and tutor inputs.</p>
+        <p className="section-caption">Your career path is saved across visits. Time and explanation preferences remain temporary inputs for future planner and tutor features.</p>
         <div className="mt-6 space-y-5">
           <div>
             <label htmlFor="preferred-path" className="field-label">Preferred career path</label>
-            <select id="preferred-path" className="field" value={draft.careerPathId} onChange={(event) => setDraft({ ...draft, careerPathId: event.target.value })}>
+            <select id="preferred-path" className="field" disabled={pending} value={draft.careerPathId} onChange={(event) => setDraft({ ...draft, careerPathId: event.target.value })}>
               {careerPaths.map((path) => <option value={path.id} key={path.id}>{path.name}</option>)}
             </select>
           </div>
@@ -95,8 +109,8 @@ export function SettingsForm() {
         </div>
       </Card>
       <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit"><Check />Apply for this visit</Button>
-        <p className="text-xs text-muted-foreground" role="status">{message || "Temporary preferences. No permanent storage."}</p>
+        <Button type="submit" disabled={pending}><Check />{pending ? "Saving preferences..." : "Save preferences"}</Button>
+        <p className="text-xs text-muted-foreground" role="status">{message || "Career path is saved to your account. Other preferences last for this visit."}</p>
       </div>
     </form>
     <DeleteAccountUnavailable />

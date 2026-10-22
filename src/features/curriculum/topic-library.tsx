@@ -6,10 +6,14 @@ import { PageHeading } from "@/components/page-heading";
 import { TopicCard } from "@/components/learning/topic-card";
 import { Button } from "@/components/ui/button";
 import { careerPaths, topics } from "@/data/mock/curriculum";
+import type { TopicStudyProgress } from "@/features/progress/types";
+import { useDemoPreferences } from "@/features/settings/demo-preferences";
 
-export function TopicLibrary({ initialPath }: { initialPath?: string; }) {
+export function TopicLibrary({ initialPath, progress, progressError }: { initialPath?: string; progress: TopicStudyProgress[]; progressError?: string }) {
   const [query, setQuery] = useState("");
-  const [pathId, setPathId] = useState(careerPaths.some((path) => path.id === initialPath) ? initialPath! : "all");
+  const { preferences } = useDemoPreferences();
+  const [filterOverride, setPathId] = useState<string | null>(careerPaths.some((path) => path.id === initialPath) ? initialPath! : null);
+  const pathId = filterOverride ?? preferences.careerPathId;
   const path = careerPaths.find((item) => item.id === pathId);
   const visibleTopics = topics.filter((topic) => (!path || path.topicIds.includes(topic.id)) && `${topic.name} ${topic.description}`.toLowerCase().includes(query.trim().toLowerCase()));
 
@@ -24,6 +28,7 @@ export function TopicLibrary({ initialPath }: { initialPath?: string; }) {
         eyebrow="Curriculum"
         title="Study topics"
         description="Find lessons by subject or filter the curriculum for a career path." />
+      {progressError && <p role="alert" className="mb-4 text-sm text-destructive">{progressError}</p>}
       <div className="mb-6 flex flex-col gap-4 rounded-lg border border-border bg-card p-4 sm:flex-row">
         <div className="relative flex-1">
           <label htmlFor="topic-search" className="sr-only">Search topics</label>
@@ -40,7 +45,7 @@ export function TopicLibrary({ initialPath }: { initialPath?: string; }) {
       </div>
       <p className="mb-4 text-xs text-muted-foreground" aria-live="polite">
         {visibleTopics.length} {visibleTopics.length === 1 ? "topic" : "topics"} · 6 educational sample lessons available across Python, SQL, and Algorithms</p>
-      {visibleTopics.length ? <div className="topic-library-grid">{visibleTopics.map((topic) => <TopicCard key={topic.id} topic={topic} />)}</div> : <div className="state-panel">
+      {visibleTopics.length ? <div className="topic-library-grid">{visibleTopics.map((topic) => <TopicCard key={topic.id} topic={topic} progress={progress.find((row) => row.topicId === topic.id)} />)}</div> : <div className="state-panel">
         <h2 className="text-lg font-semibold">No matching topics</h2>
         <p className="my-3 text-sm text-muted-foreground">Try a different keyword or explore all career paths.</p>
         <Button variant="outline" onClick={resetFilters}>Reset filters</Button>

@@ -1,19 +1,12 @@
 import Link from "next/link";
-import { ArrowUpRight, Check } from "lucide-react";
-import { recentActivity } from "@/data/mock/progress";
-
-export function ActivitySummary() {
-  return <ul className="divide-y divide-border">
-    {recentActivity.map((activity) => <li key={activity.title}>
-      <Link className="flex items-center gap-3 py-4 hover:text-primary" href={activity.href}>
-        <Check size={16} className="shrink-0 text-primary" aria-hidden="true" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">{activity.title}</span>
-          <span className="mt-1 block text-xs text-muted-foreground">{activity.detail}</span>
-        </span>
-        <span className="hidden text-xs text-muted-foreground sm:block">{activity.label}</span>
-        <ArrowUpRight size={14} className="shrink-0 text-muted-foreground" />
-      </Link>
-    </li>)}
-  </ul>;
+import { ArrowUpRight } from "lucide-react";
+import type { Activity } from "@/features/progress/types";
+export function ActivitySummary({ activities }: { activities: Activity[] }) {
+  if (!activities.length) return <p className="mt-4 text-sm leading-6 text-muted-foreground">No saved activity yet. Start a lesson or answer a practice question.</p>;
+  return <ul className="divide-y divide-border">{activities.map((activity) => <li key={activity.id}>
+    <Link className="flex min-h-11 items-center gap-3 py-3 hover:text-primary" href={activity.href}>
+      <span className="min-w-0 flex-1"><span className="block text-sm font-medium">{activity.title}</span><span className="mt-1 block text-xs text-muted-foreground">{activity.detail}</span><time className="mt-1 block text-xs text-muted-foreground" dateTime={activity.at}>{new Date(activity.at).toLocaleString("en", { timeZone: "UTC", dateStyle: "medium", timeStyle: "short" })} UTC</time></span>
+      <ArrowUpRight size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+    </Link>
+  </li>)}</ul>;
 }

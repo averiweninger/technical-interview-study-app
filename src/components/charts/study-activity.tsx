@@ -1,23 +1,10 @@
-import { studyActivity } from "@/data/mock/progress";
-
-// A seven-column CSS chart with equivalent per-day text for screen readers.
-export function StudyActivity() {
-  const totalMinutes = studyActivity.reduce((sum, day) => sum + day.minutes, 0);
-  // Derive one shared scale; a nonzero floor also handles a week with no activity.
-  const maxMinutes = Math.max(1, ...studyActivity.map((day) => day.minutes));
-  return <div>
-    <div className="mb-6 flex items-baseline gap-2">
-      <span className="text-2xl font-semibold tabular-nums">{totalMinutes}</span>
-      <span className="text-sm text-muted-foreground">minutes this sample week</span>
-    </div>
-    <div className="activity-chart" aria-label="Sample study minutes by day">
-      {studyActivity.map((day) => <div key={day.day} className="flex min-w-0 flex-col items-center gap-2">
-        <span className="text-xs tabular-nums text-muted-foreground" aria-hidden="true">{day.minutes}</span>
-        <div className="chart-bar-track" aria-hidden="true">
-          <div className="chart-bar" style={{ height: `${day.minutes / maxMinutes * 100}%` }} />
-        </div>
-        <span className="text-xs text-muted-foreground">{day.day}<span className="sr-only">: {day.minutes} minutes</span></span>
-      </div>)}
-    </div>
+export function StudyActivity({ days }: { days: { day: string; count: number; label: string }[] }) {
+  const total = days.reduce((sum, day) => sum + day.count, 0);
+  const max = Math.max(1, ...days.map((day) => day.count));
+  return <div><p className="mb-6 text-sm text-muted-foreground"><strong className="text-2xl font-semibold tabular-nums text-foreground">{total}</strong> submissions in the last 7 UTC days</p>
+    <div className="activity-chart" aria-label="Saved practice submissions by UTC day">{days.map((day) => <div key={day.day} className="flex min-w-0 flex-col items-center gap-2">
+      <span className="text-xs tabular-nums text-muted-foreground" aria-hidden="true">{day.count}</span><div className="chart-bar-track" aria-hidden="true"><div className="chart-bar" style={{ height: day.count / max * 100 + "%" }} /></div>
+      <span className="text-xs text-muted-foreground">{day.label}<span className="sr-only">: {day.count} submissions on {day.day}</span></span>
+    </div>)}</div>
   </div>;
 }

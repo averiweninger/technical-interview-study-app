@@ -10,25 +10,25 @@ export interface DemoPreferences {
   theme: "light" | "dark";
 }
 
-export const initialPreferences: DemoPreferences = {
-  careerPathId: "software-engineering", dailyMinutes: 30,
+export const initialPreferences: Omit<DemoPreferences, "careerPathId"> = {
+  dailyMinutes: 30,
   explanationLevel: "beginner", theme: "light",
 };
 
 type PreferencesContextValue = {
   account: AccountProfile;
   preferences: DemoPreferences;
-  updatePreferences: (changes: Partial<DemoPreferences>) => void;
+  updatePreferences: (changes: Partial<Omit<DemoPreferences, "careerPathId">>) => void;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
-// One small context shares temporary preferences across routes. Refreshing restores the examples.
-// No authentication, browser storage, database write, or analytics event occurs here.
+// Path selection comes from the verified account. Only the remaining preferences are temporary.
 export function DemoPreferencesProvider({ children, user }: { children: ReactNode; user: AccountProfile }) {
-  const [preferences, setPreferences] = useState(initialPreferences);
+  const [temporary, setPreferences] = useState(initialPreferences);
+  const preferences = { ...temporary, careerPathId: user.careerPathId };
 
-  function updatePreferences(changes: Partial<DemoPreferences>) {
+  function updatePreferences(changes: Partial<Omit<DemoPreferences, "careerPathId">>) {
     setPreferences((current) => ({ ...current, ...changes }));
   }
 

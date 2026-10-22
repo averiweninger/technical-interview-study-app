@@ -1,103 +1,42 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, BarChart3, CircleHelp } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { StudyActivity } from "@/components/charts/study-activity";
 import { ActivitySummary } from "@/components/learning/activity-summary";
+import { StudyActivity } from "@/components/charts/study-activity";
+import { getStudyProgress } from "@/server/learning/study-progress";
 import { topics } from "@/data/mock/curriculum";
-import { topicProgress, demoStats } from "@/data/mock/progress";
 
 export const metadata: Metadata = { title: "Progress" };
-
-export default function ProgressPage() {
-  const assessed = topicProgress.filter((row) => row.answered > 0);
-  const strongest = [...assessed].sort((a, b) => b.correct / b.answered - a.correct / a.answered).slice(0, 2);
-  const needsPractice = assessed.filter((row) => row.mastery === "Needs practice");
-  const stats = [
-    { label: "Topic completion", value: `${demoStats.completion}%` },
-    { label: "Questions answered", value: demoStats.answered },
-    { label: "Practice accuracy", value: `${Math.round(demoStats.correct / demoStats.answered * 100)}%` },
-    { label: "Topics with sample evidence", value: `${demoStats.activeTopics} / ${topics.length}` },
-  ];
-
+export default async function ProgressPage() {
+  const result = await getStudyProgress();
   return <>
-    <PageHeading
-      eyebrow="Learning history"
-      title="Progress overview"
-      description="Compare sample topic completion, practice accuracy, and study activity." />
-    <div className="callout mb-6 flex items-start gap-3">
-      <CircleHelp size={19} className="mt-1 shrink-0 text-primary" />
-      <p>
-        <strong>Sample analytics, not your results.</strong> These static records demonstrate the planned dashboard. Mastery labels are illustrative; they are not calculated from your interactions or an implemented mastery algorithm.</p>
-    </div>
-    <section aria-label="Illustrative progress statistics" className="metric-strip">
-      {stats.map((stat) => <div className="metric-item" key={stat.label}>
-        <p className="text-sm text-muted-foreground">{stat.label}</p>
-        <p className="metric-value">{stat.value}</p>
-      </div>)}
-    </section>
-    <Card className="mt-6 overflow-hidden">
-      <div className="p-4 sm:p-6">
-        <h2 className="section-title">Topic progress</h2>
-        <p className="section-caption">Sample completion and practice evidence, kept separate.</p>
-      </div>
-      <div className="overflow-x-auto" role="region" aria-label="Topic progress table" tabIndex={0}>
-        <table className="w-full min-w-160 text-left text-sm tabular-nums">
-          <caption className="sr-only">Illustrative topic completion, accuracy, and mastery labels. No values reflect this visitor&apos;s activity.</caption>
-          <thead className="border-y border-border bg-muted text-xs text-muted-foreground">
-            <tr>
-              <th scope="col" className="px-6 py-3 font-medium">Topic</th>
-              <th scope="col" className="px-5 py-3 font-medium">Completion</th>
-              <th scope="col" className="px-5 py-3 font-medium">Questions</th>
-              <th scope="col" className="px-5 py-3 font-medium">Accuracy</th>
-              <th scope="col" className="px-6 py-3 font-medium">Sample mastery</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {topicProgress.map((row) => <tr key={row.topicId}>
-              <th scope="row" className="px-6 py-4 font-medium">
-                <Link href={`/learn/${row.topicId}`} className="hover:text-primary">{topics.find((topic) => topic.id === row.topicId)?.name}</Link>
-              </th>
-              <td className="min-w-36 px-5 py-4">
-                <div className="mb-2 text-xs text-muted-foreground">{row.completion}%</div>
-                <Progress value={row.completion} label={`${row.topicId} illustrative completion`} />
-              </td>
-              <td className="px-5 py-4 text-muted-foreground">{row.answered}</td>
-              <td className="px-5 py-4 text-muted-foreground">{row.answered ? `${Math.round(row.correct / row.answered * 100)}%` : "—"}</td>
-              <td className="px-6 py-4"><span className="pill">{row.mastery}</span></td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-    <div className="mt-6 grid items-start gap-6 xl:grid-cols-2">
-      <Card className="p-6"><h2 className="section-title mb-5">Study activity</h2><StudyActivity /></Card>
-      <Card className="p-6">
-        <h2 className="section-title">Where to focus</h2>
-        <p className="section-caption">Based on the sample practice records.</p>
-        <h3 className="eyebrow mt-6">STRONGEST IN THIS SAMPLE</h3>
-        <ul className="space-y-3">
-          {strongest.map((row) => <li key={row.topicId}>
-            <Link href={`/learn/${row.topicId}`} className="flex min-h-11 items-center justify-between gap-4 text-sm hover:text-primary hover:underline">
-              <span>{topics.find((topic) => topic.id === row.topicId)?.name}</span>
-              <span className="text-primary">{Math.round(row.correct / row.answered * 100)}% sample accuracy</span>
-            </Link>
-          </li>)}
-        </ul>
-        <h3 className="eyebrow mt-6">ROOM TO GROW</h3>
-        {needsPractice.map((row) => <Link
-          key={row.topicId}
-          className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm hover:bg-muted"
-          href={`/practice?topic=${row.topicId}`}>
-          <span>{topics.find((topic) => topic.id === row.topicId)?.name}</span>
-          <ArrowUpRight size={15} />
-        </Link>)}
-        <p className="mt-5 flex items-start gap-2 text-xs leading-6 text-muted-foreground">
-          <BarChart3 size={15} className="mt-1 shrink-0" />Accuracy describes these example answers; it is not a prediction of interview success.</p>
+    <PageHeading eyebrow="Learning history" title="Progress overview" description="Your saved lesson completion, practice scores, and recent activity." />
+    {result.status === "error" ? <Card className="p-5"><p role="alert">{result.message}</p><Button className="mt-4" asChild variant="outline"><a href="/progress">Reload progress</a></Button></Card> : <>
+      <section aria-label="Your progress statistics" className="metric-strip">
+        {[
+          { label: "Lessons completed", value: result.data.completedLessons + " / " + result.data.totalLessons },
+          { label: "Graded submissions", value: result.data.gradedAttempts },
+          { label: "Practice score", value: result.data.accuracy === null ? "--" : result.data.accuracy + "%" },
+          { label: "Self-reviews saved", value: result.data.selfReviews },
+        ].map((stat) => <div key={stat.label} className="metric-item"><p className="text-sm text-muted-foreground">{stat.label}</p><p className="metric-value">{stat.value}</p></div>)}
+      </section>
+      <p className="mt-4 text-sm text-muted-foreground">Practice score is the average saved multiple-choice score. Self-reviews and reading activity never raise mastery. Topic mastery is not assessed.</p>
+      <Card className="mt-6 overflow-hidden"><div className="p-4 sm:p-6"><h2 className="section-title">Topic progress</h2><p className="section-caption">Lesson completion and graded practice are kept separate.</p></div>
+        <div className="overflow-x-auto" role="region" aria-label="Topic progress table" tabIndex={0}>
+          <table className="w-full min-w-160 text-left text-sm tabular-nums"><caption className="sr-only">Saved completion and practice score by topic. Mastery is not assessed.</caption>
+            <thead className="border-y border-border bg-muted text-xs text-muted-foreground"><tr>{["Topic", "Lessons", "Submissions", "Practice score", "Mastery"].map((label) => <th key={label} scope="col" className="px-4 py-3 font-medium">{label}</th>)}</tr></thead>
+            <tbody className="divide-y divide-border">{result.data.topics.map((row) => <tr key={row.topicId}>
+              <th scope="row" className="px-4 py-3 font-medium"><Link className="hover:text-primary" href={"/learn/" + row.topicId}>{topics.find((topic) => topic.id === row.topicId)?.name}</Link></th>
+              <td className="min-w-32 px-4 py-3"><p className="mb-2 text-xs">{row.completed}/{row.lessonCount}</p><Progress value={row.lessonCount ? row.completed / row.lessonCount * 100 : 0} label={row.topicId + " lesson completion"} /></td>
+              <td className="px-4 py-3">{row.answered}</td><td className="px-4 py-3">{row.accuracy === null ? "--" : row.accuracy + "%"}</td><td className="px-4 py-3 text-muted-foreground">Not assessed</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
       </Card>
-    </div>
-    <Card className="mt-6 p-6"><h2 className="section-title">Sample learning history</h2><ActivitySummary /></Card>
+      <div className="mt-6 grid items-start gap-4 xl:grid-cols-2"><Card className="p-4 sm:p-6"><h2 className="section-title mb-4">Practice activity</h2><StudyActivity days={result.data.days} /></Card><Card className="p-4 sm:p-6"><h2 className="section-title">Recent learning history</h2><p className="section-caption">Up to 20 recent entries. Lesson rows show their latest saved update.</p><ActivitySummary activities={result.data.activity} /></Card></div>
+    </>}
   </>;
 }

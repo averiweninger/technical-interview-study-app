@@ -1,7 +1,9 @@
-import { expect, test } from "./auth-fixture";
+import { expect, test, signIn } from "./auth-fixture";
 import AxeBuilder from "@axe-core/playwright";
 
-test("navigation, temporary path selection, and topic filtering", async ({ page }) => {
+test("navigation, saved path selection, and topic filtering", async ({ page }) => {
+  // Saved preferences mutate the account; keep this test separate from the read-only worker login.
+  await signIn(page);
   await page.goto("/career-paths");
   await page.getByRole("button", { name: "Choose Data Analytics", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Data Analytics", exact: true })).toHaveCount(2);
@@ -15,7 +17,7 @@ test("navigation, temporary path selection, and topic filtering", async ({ page 
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Preferred career path")).toHaveValue("data-analytics");
   await page.reload();
-  await expect(page.getByLabel("Preferred career path")).toHaveValue("software-engineering");
+  await expect(page.getByLabel("Preferred career path")).toHaveValue("data-analytics");
 });
 
 test("lesson navigation and correct knowledge-check feedback", async ({ page }) => {
@@ -25,6 +27,8 @@ test("lesson navigation and correct knowledge-check feedback", async ({ page }) 
   await expect(page.getByText("Correct. Nicely reasoned.")).toBeVisible();
   await page.getByRole("link", { name: "Next lesson" }).click();
   await expect(page.getByRole("heading", { name: "Loops and iteration", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Start lesson", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Mark lesson complete" })).toBeEnabled();
   await page.getByRole("button", { name: "Mark lesson complete" }).click();
   await expect(page.getByText("Activity only.", { exact: false })).toBeVisible();
 });
@@ -60,7 +64,7 @@ test("settings apply across client navigation and reset on refresh", async ({ pa
   await page.goto("/settings");
   await page.getByLabel("Daily study goal (minutes)").fill("45");
   await page.getByLabel("Theme", { exact: true }).selectOption("dark");
-  await page.getByRole("button", { name: "Apply for this visit" }).click();
+  await page.getByRole("button", { name: "Save preferences" }).click();
   await expect(page.locator('[data-theme="dark"]')).toBeVisible();
   await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
@@ -107,7 +111,10 @@ test("dark workspace preserves contrast, keyboard answers, and responsive layout
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/practice?topic=python");
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  // Persisted answers can restore asynchronously; explicitly begin a fresh keyboard exercise.
+  await page.getByRole("button", { name: "Reset this visit", exact: true }).click();
   const firstChoice = page.getByRole("radio").first();
+  await expect(firstChoice).toBeEnabled();
   await firstChoice.focus();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("radio").nth(1)).toBeChecked();
@@ -116,6 +123,8 @@ test("dark workspace preserves contrast, keyboard answers, and responsive layout
 
   // Client navigation keeps the selected theme while checking both chart and form surfaces.
   await page.getByRole("link", { name: "Interview Compass dashboard" }).first().click();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
+  await expect(page).toHaveTitle(/Dashboard/);
   await expect(page.locator('[data-theme="dark"]')).toBeVisible();
   const findings = await new AxeBuilder({ page }).analyze();
   expect(findings.violations.filter((item) => item.impact === "serious" || item.impact === "critical")).toEqual([]);
