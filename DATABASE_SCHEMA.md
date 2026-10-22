@@ -2,6 +2,10 @@
 
 Status: future logical design with a Step 3C-1 subset applied and isolation-verified according to the user, 2026-10-21. Step 3D-1 uses existing profiles/lesson_progress tables; it changes no schema or grants. Use PostgreSQL on Supabase with managed `auth.users`. Introduce only tables needed by the authorized step in DEVELOPMENT_ROADMAP.md: identity/progress in Step 3, curriculum/skills in Step 4, research/profiles and AI accounting in Step 5, tutor in Step 6, planning/reviews in Step 7, execution/mocks in Step 8. Table numbers are document references, not migration order.
 
+## Current path/onboarding metadata (no schema change)
+
+`selected_career_path_ids` is a nonempty array of distinct IDs from the six-path catalog. `career_path_id` remains the primary and must belong to that array; both are saved in one session-scoped Auth metadata update. Legacy primary-only accounts read as a singleton selection. `onboarding_version: 1` identifies new signups; the application writes `onboarding_completed_version: 1` with validated full settings and paths. The proxy checks saved fields as well as the marker. These editable UI preferences never authorize data access and do not implement trusted relational onboarding completion. The path/goal/full-profile tables below remain proposed. No remote migration, grant, generated type, or data operation occurred. Same-field concurrent preference updates remain last-write-wins.
+
 ## Prepared Step 3C-1 subset
 
 Step 3 preferences follow-up (2026-10-22): `daily_minutes`, `explanation_level`, `theme`, `timezone`, and optional `interview_date` are validated owner preferences in existing Auth metadata, alongside `career_path_id`. Clearing the date sends null (Supabase can remove the key); reads treat missing/null as unset. The date is a calendar string, not a timestamp. No table, grant, migration, or generated database type changed. The existing `profiles.timezone` field is not synchronized or consumed by this preference UI; the profile/goal/multi-path definitions below remain the future relational design. Metadata never authorizes access. See the current DEVELOPER_GUIDE.md report for defaults, validation, and hosted verification gaps.
@@ -14,7 +18,7 @@ The preparation migration includes no Auth trigger/backfill. Step 3D-1 now boots
 
 Submission uniqueness, UTC evidence dates, grade consistency, same-owner sessions, and same-lesson/question versions have structural constraints. Full state transitions, canonical replay/hash handling, cross-attempt assistance checks, reviewed-content eligibility, concurrency, audit/correction events, resume bounds, and bounded session heartbeats still require the documented trusted transactions before graded-evidence persistence is enabled. Delete attempts before referenced sessions/identity cleanup; session references intentionally restrict deletion. See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#step-3c-1-prepared-database-migration) for application, validation, and rollback. The local SQL checks are prepared but have not been executed.
 
-Career-path bug fix (2026-10-22): the current single primary path is stored as a validated `career_path_id` in the verified owner's existing Supabase Auth metadata. No public schema, grants, or migrations changed. The proposed `user_career_paths` multi-path design below remains future work; it is not claimed as installed by this preference fix.
+Career-path bug fix (2026-10-22): the current single primary path is stored as a validated `career_path_id` in the verified owner's existing Supabase Auth metadata. No public schema, grants, or migrations changed. The later metadata follow-up above implements multiple selections without installing the proposed `user_career_paths` table.
 
 ## Definition conventions
 

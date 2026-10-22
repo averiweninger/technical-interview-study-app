@@ -4,6 +4,8 @@ Interview Compass is an AI-powered adaptive learning platform in development, de
 
 **Status:** Initial development stage with email/password signup, login, confirmation, logout, and protected study routes using Supabase SSR sessions (Step 3B). The user reports Step 3C database migration/security checks passed. Step 3D implements saved lesson progress, immutable practice history, and real dashboard/progress metrics; configure its server-only key using [the developer guide](DEVELOPER_GUIDE.md#step-3d-persistent-study-progress). Mastery is explicitly not assessed. Password recovery is implemented locally; its Reset Password email template and hosted delivery require the setup and verification in DEVELOPER_GUIDE.md. OpenAI, code execution, and deployment are not implemented. Hosted email delivery and dashboard configuration require verification. This is not the complete Phase 1 MVP.
 
+New signups complete resumable `/onboarding`: choose paths/primary, then review study preferences, timezone, and optional interview date. Established accounts can review setup from Settings. Local fixture tests do not establish hosted persistence; see the latest [verification report](DEVELOPER_GUIDE.md#multiple-paths-and-onboarding-step-3--onb-01).
+
 ## Frontend Prototype
 
 Signup stores first/last names in Supabase Auth metadata. The workspace shows the verified account name/email, and Settings supports name updates and confirmed email changes. Account deletion is clearly marked unavailable until its secure server backend and retention workflow are configured; no active deletion control is exposed.
@@ -11,7 +13,7 @@ Signup stores first/last names in Supabase Auth metadata. The workspace shows th
 | Page | Implemented in source |
 | --- | --- |
 | Dashboard | Continue an unfinished lesson, account-specific completion/practice metrics, compact topic rows, and recent activity |
-| Career Paths | Six selectable paths, saved account preference, and matching dashboard/study/practice focus |
+| Career Paths | Multiple saved selections from six paths, one primary, and primary-based dashboard/study/practice focus |
 | Study Topics | Search, path filtering, topic details, real sample lesson counts, and useful empty states |
 | Lessons | Six sample lessons, objectives/examples/checks, saved reading positions and completion, and previous/next navigation |
 | Practice | Authenticated server grading, retry-safe saved submissions, conceptual self-review, and unexecuted saved Python/SQL drafts |

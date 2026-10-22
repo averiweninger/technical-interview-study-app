@@ -17,7 +17,7 @@ beforeEach(() => {
   mocks.allow.mockReturnValue(true);
   mocks.client.mockResolvedValue({ auth: { getUser: mocks.getUser, updateUser: mocks.updateUser } });
   mocks.getUser.mockResolvedValue({ data: { user: { id: "actor" } }, error: null });
-  mocks.updateUser.mockResolvedValue({ data: { user: { id: "actor", user_metadata: { career_path_id: "business-analytics" } } }, error: null });
+  mocks.updateUser.mockResolvedValue({ data: { user: { id: "actor", user_metadata: { career_path_id: "business-analytics", selected_career_path_ids: ["business-analytics", "data-science"] } } }, error: null });
 });
 
 describe("saved career path", () => {
@@ -28,32 +28,32 @@ describe("saved career path", () => {
     }
   });
   it("saves only the authenticated actor's path and invalidates the workspace", async () => {
-    expect(await saveCareerPath({ pathId: "business-analytics" })).toMatchObject({ status: "success" });
-    expect(mocks.updateUser).toHaveBeenCalledWith({ data: { career_path_id: "business-analytics" } });
+    expect(await saveCareerPath({ careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"] })).toMatchObject({ status: "success" });
+    expect(mocks.updateUser).toHaveBeenCalledWith({ data: { career_path_id: "business-analytics", selected_career_path_ids: ["business-analytics", "data-science"] } });
     expect(mocks.getUser.mock.invocationCallOrder[0]).toBeLessThan(mocks.updateUser.mock.invocationCallOrder[0]);
     expect(mocks.revalidate).toHaveBeenCalledWith("/", "layout");
   });
   it("rejects invalid paths, owner injection, foreign origins, and anonymous mutations", async () => {
-    for (const input of [{ pathId: "unknown" }, { pathId: "business-analytics", user_id: "other" }, null]) {
+    for (const input of [{ pathId: "unknown" }, { careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"], user_id: "other" }, null]) {
       expect(await saveCareerPath(input)).toMatchObject({ status: "error" });
     }
     expect(mocks.client).not.toHaveBeenCalled();
     mocks.headers.mockResolvedValueOnce(new Headers({ origin: "https://other.example.test" }));
-    expect(await saveCareerPath({ pathId: "business-analytics" })).toMatchObject({ status: "error" });
+    expect(await saveCareerPath({ careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"] })).toMatchObject({ status: "error" });
     mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await saveCareerPath({ pathId: "business-analytics" })).toMatchObject({ status: "error" });
+    expect(await saveCareerPath({ careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"] })).toMatchObject({ status: "error" });
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
   it("does not report success on rate limits, wrong-actor responses, or unconfirmed metadata", async () => {
     mocks.allow.mockReturnValueOnce(false);
-    expect(await saveCareerPath({ pathId: "business-analytics" })).toMatchObject({ status: "error" });
+    expect(await saveCareerPath({ careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"] })).toMatchObject({ status: "error" });
     expect(mocks.updateUser).not.toHaveBeenCalled();
-    for (const user of [{ id: "other", user_metadata: { career_path_id: "business-analytics" } }, { id: "actor", user_metadata: {} }]) {
+    for (const user of [{ id: "other", user_metadata: { career_path_id: "business-analytics", selected_career_path_ids: ["business-analytics", "data-science"] } }, { id: "actor", user_metadata: {} }]) {
       mocks.updateUser.mockResolvedValue({ data: { user }, error: null });
-      expect(await saveCareerPath({ pathId: "business-analytics" })).toMatchObject({ status: "error" });
+      expect(await saveCareerPath({ careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"] })).toMatchObject({ status: "error" });
     }
     mocks.updateUser.mockRejectedValue(new Error("private provider detail"));
-    const failed = await saveCareerPath({ pathId: "business-analytics" });
+    const failed = await saveCareerPath({ careerPathId: "business-analytics", selectedCareerPathIds: ["business-analytics", "data-science"] });
     expect(failed.status).toBe("error");
     expect(JSON.stringify(failed)).not.toContain("private provider detail");
     expect(mocks.revalidate).not.toHaveBeenCalled();

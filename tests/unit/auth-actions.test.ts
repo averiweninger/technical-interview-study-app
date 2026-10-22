@@ -59,7 +59,7 @@ describe("authentication actions", () => {
     expect(result.status).toBe("confirmation");
     expect(JSON.stringify(result)).not.toContain("Synthetic-passphrase");
     expect(mocks.signUp).toHaveBeenCalledWith(expect.objectContaining({ options: {
-      emailRedirectTo: "http://localhost:3000/auth/callback?next=%2Fdashboard", data: { first_name: "Taylor", last_name: "Morgan" },
+      emailRedirectTo: "http://localhost:3000/auth/callback?next=%2Fdashboard", data: { first_name: "Taylor", last_name: "Morgan", onboarding_version: 1 },
     } }));
   });
   it("discloses duplicate registration only for an explicit provider code", async () => {

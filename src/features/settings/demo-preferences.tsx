@@ -7,6 +7,7 @@ import { saveStudyPreferences } from "./preference-actions";
 
 export interface DemoPreferences extends StudyPreferences {
   careerPathId: string;
+  selectedCareerPathIds: string[];
 }
 
 type PreferencesContextValue = {
@@ -21,7 +22,7 @@ const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
 // The verified server DTO supplies both SSR and hydration; there is no browser-storage fallback.
 export function DemoPreferencesProvider({ children, user }: { children: ReactNode; user: AccountProfile }) {
-  const preferences = { ...user.studyPreferences, careerPathId: user.careerPathId };
+  const preferences = { ...user.studyPreferences, careerPathId: user.careerPathId, selectedCareerPathIds: user.selectedCareerPathIds };
   const [themeMessage, setThemeMessage] = useState<PreferencesContextValue["themeMessage"]>(null);
   const [themePending, startTransition] = useTransition();
   const busy = useRef(false);

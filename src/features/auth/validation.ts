@@ -21,7 +21,7 @@ export type AuthFormState =
   | { status: "error"; message: string; fields?: { email?: string; password?: string; firstName?: string; lastName?: string } }
   | { status: "confirmation"; message: string };
 
-const workspaceRoots = ["/dashboard", "/career-paths", "/learn", "/lessons", "/practice", "/progress", "/settings"];
+const workspaceRoots = ["/dashboard", "/career-paths", "/learn", "/lessons", "/practice", "/progress", "/settings", "/onboarding"];
 
 export function isProtectedPath(path: string) {
   return path === "/" || workspaceRoots.some((root) => path === root || path.startsWith(`${root}/`));

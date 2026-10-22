@@ -19,7 +19,7 @@ export async function Dashboard() {
   const interviewDays = interviewDate ? interviewDaysRemaining(interviewDate, timezone, new Date()) : null;
   return <div className="dashboard">
     <PageHeading eyebrow="Overview" title="Dashboard" description="Continue a lesson, practice a topic, or review your saved progress." action={<Button variant="outline" asChild><Link href="/practice">Open practice <ArrowRight /></Link></Button>} />
-    <p className="mb-4 text-sm text-muted-foreground">Selected path: <strong className="text-foreground">{path.name}</strong> <Link className="ml-2 underline underline-offset-4" href="/career-paths">Change path</Link></p>
+    <p className="mb-4 text-sm text-muted-foreground">Primary path: <strong className="text-foreground">{path.name}</strong> <Link className="ml-2 underline underline-offset-4" href="/career-paths">Change path</Link></p>
     {interviewDate && <p className="mb-4 text-sm text-muted-foreground">Interview date: <time dateTime={interviewDate}>{interviewDate}</time> ({timezone}) · {interviewDays === 0 ? "Interview today" : interviewDays! < 0 ? "Interview date has passed" : `${interviewDays} calendar days remaining`}. <Link className="underline underline-offset-4" href="/settings">Edit preferences</Link></p>}
     {result.status === "error" ? <Card className="p-5"><p role="alert">{result.message}</p><Button asChild variant="outline" className="mt-4"><a href="/dashboard">Reload progress</a></Button></Card> : <>
       <Card className="recommended-lesson">

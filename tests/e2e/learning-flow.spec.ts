@@ -5,7 +5,7 @@ test("navigation, saved path selection, and topic filtering", async ({ page }) =
   // Saved preferences mutate the account; keep this test separate from the read-only worker login.
   await signIn(page);
   await page.goto("/career-paths");
-  await page.getByRole("button", { name: "Choose Data Analytics", exact: true }).click();
+  await page.getByRole("button", { name: "Make primary: Data Analytics", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Data Analytics", exact: true })).toHaveCount(2);
   await page.getByRole("link", { name: "Explore this path" }).click();
   await expect(page.getByLabel("Filter topics by career path")).toHaveValue("data-analytics");

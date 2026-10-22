@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isCareerPathId } from "@/features/curriculum/career-path-selection";
+import { pathSelectionShape, validPathSelection } from "@/features/curriculum/career-path-selection";
 
 /** Accept supported IANA names/aliases, never arbitrary numeric UTC offsets. */
 export function isTimeZone(value: string) {
@@ -32,9 +32,9 @@ export const preferenceMetadataKeys = {
   dailyMinutes: "daily_minutes", explanationLevel: "explanation_level", theme: "theme", timezone: "timezone", interviewDate: "interview_date",
 } as const;
 
-export const preferencesUpdateSchema = studyPreferencesSchema.extend({
-  careerPathId: z.string().max(100).refine(isCareerPathId, "Choose an available career path."),
-}).partial().strict().refine((value) => Object.values(value).some((entry) => entry !== undefined), "Choose preferences to save.");
+export const preferencesUpdateSchema = studyPreferencesSchema.extend(pathSelectionShape).partial().strict()
+  .refine((value) => Object.values(value).some((entry) => entry !== undefined), "Choose preferences to save.")
+  .refine((value) => value.careerPathId === undefined && value.selectedCareerPathIds === undefined || validPathSelection(value), "Save distinct selected paths and their primary path together.");
 
 /** Validate each field independently so one legacy/bad value does not erase other preferences. */
 export function readStudyPreferences(metadata: Record<string, unknown>): StudyPreferences {

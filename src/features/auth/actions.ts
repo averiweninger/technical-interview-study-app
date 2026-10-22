@@ -48,7 +48,7 @@ export async function submitCredentials(mode: "login" | "signup", _previous: Aut
         email: names.email, password: names.password,
         options: {
           emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
-          data: { first_name: names.firstName, last_name: names.lastName },
+          data: { first_name: names.firstName, last_name: names.lastName, onboarding_version: 1 },
         },
       });
       // Only an explicit provider error permits disclosure; never infer it from fake/empty identities.

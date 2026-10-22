@@ -48,8 +48,8 @@ test("saved lessons and grades drive consistent private dashboards across refres
   await expect(page.getByRole("cell", { name: "Not assessed", exact: true }).first()).toBeVisible();
   // Changing focus must preserve progress/history even outside the new path's topics.
   await page.goto("/career-paths");
-  await page.getByRole("button", { name: "Choose Business Analytics", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Selected path: Business Analytics", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Make primary: Business Analytics", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Primary path: Business Analytics", exact: true })).toBeVisible();
   await page.goto("/dashboard");
   await expect(metric(page, "Lessons completed")).toHaveText("1 / 6");
   await expect(metric(page, "Graded submissions")).toHaveText("1");

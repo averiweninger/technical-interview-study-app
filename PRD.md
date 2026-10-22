@@ -4,7 +4,7 @@ Status: proposed full-product requirements, 2026-10-21. The frontend prototype d
 
 ## Problem and product outcome
 
-Step 3 preferences follow-up (2026-10-22): daily goal, explanation level, theme, validated timezone, and optional calendar interview date now persist through verified Auth metadata. The date can be edited/cleared and appears as a timezone-aware calendar-day countdown. This is partial ONB-01, without multi-path onboarding or an adaptive plan. Hosted verification remains pending; Phase 1 is not complete.
+Step 3 preferences follow-up (2026-10-22): daily goal, explanation level, theme, validated timezone, and optional calendar interview date now persist through verified Auth metadata. The date can be edited/cleared and appears as a timezone-aware calendar-day countdown. ONB-01 now also has locally implemented multiple-path selection and two-step resumable onboarding using these settings; adaptive planning remains deferred. Hosted verification remains pending; Phase 1 is not complete.
 
 Technical interview candidates often split their preparation between static tutorials, question banks, and generic chat tools. They lack a coherent view of what they understand, where they struggle, and what to practice next. Build a general-purpose preparation platform that connects instruction, practice, feedback, and evidence of learning. Content and recommendations must support multiple career paths and employers; the product is not specific to AT&T or any other company.
 

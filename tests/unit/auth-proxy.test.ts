@@ -52,3 +52,16 @@ describe("session proxy", () => {
     expect(response.headers.get("location")).not.toContain("private");
   });
 });
+
+ it("routes new incomplete users to setup while preserving a safe destination and rotated cookies", async () => {
+   mocks.user.mockImplementation(async () => {
+     await mocks.cookieMethods?.setAll?.([{ name: "session", value: "rotated", options: { httpOnly: true } }], {});
+     return { data: { user: { id: "new", user_metadata: { onboarding_version: 1 } } }, error: null };
+   });
+   const response = await updateSession(new NextRequest("http://localhost:3000/practice?topic=sql"));
+   expect(response.headers.get("location")).toBe("http://localhost:3000/onboarding?next=%2Fpractice%3Ftopic%3Dsql");
+   expect(response.cookies.get("session")?.value).toBe("rotated");
+   for (const route of ["/onboarding", "/auth/callback", "/auth/recovery", "/reset-password", "/login"]) {
+     expect((await updateSession(new NextRequest("http://localhost:3000" + route))).status).toBe(200);
+   }
+ });

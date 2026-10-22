@@ -1,4 +1,5 @@
-import { getCareerPath } from "@/features/curriculum/career-path-selection";
+import { readPathSelection } from "@/features/curriculum/career-path-selection";
+import { hasSavedPaths, needsOnboarding } from "@/features/settings/onboarding";
 import { readStudyPreferences, type StudyPreferences } from "@/features/settings/study-preferences";
 
 export interface AccountProfile {
@@ -9,6 +10,9 @@ export interface AccountProfile {
   displayName: string;
   pendingEmail: string;
   careerPathId: string;
+  selectedCareerPathIds: string[];
+  onboardingRequired: boolean;
+  onboardingPathsSaved: boolean;
   studyPreferences: StudyPreferences;
 }
 
@@ -22,7 +26,9 @@ export function accountProfile(user: { id: string; email?: string; new_email?: s
     id: user.id, email: user.email ?? "", firstName, lastName,
     displayName: [firstName, lastName].filter(Boolean).join(" ") || text(metadata.full_name) || text(metadata.name) || "Learner",
     pendingEmail: user.new_email ?? "",
-    careerPathId: getCareerPath(metadata.career_path_id).id,
+    ...readPathSelection(metadata),
+    onboardingRequired: needsOnboarding(metadata),
+    onboardingPathsSaved: hasSavedPaths(metadata),
     studyPreferences: readStudyPreferences(metadata),
   };
 }

@@ -3,12 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "./client";
 import { authCookieOptions } from "@/server/auth/config";
 import { isProtectedPath, safeNextPath } from "@/features/auth/validation";
+import { needsOnboarding, setupDestination } from "@/features/settings/onboarding";
 
 /** Refresh before rendering and propagate every cookie to both the request and final response. */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   let authenticated = false;
   let unavailable = false;
+  let setupRequired = false;
   try {
     const { url, publishableKey } = getSupabaseConfig();
     const supabase = createServerClient(url, publishableKey, {
@@ -28,6 +30,7 @@ export async function updateSession(request: NextRequest) {
     // getUser validates against Supabase and observes account changes, unlike a local cookie decode.
     const { data, error } = await supabase.auth.getUser();
     authenticated = !error && !!data.user;
+    setupRequired = authenticated && needsOnboarding(data.user?.user_metadata ?? {});
     unavailable = !!error && (error.status ?? 0) >= 500;
   } catch {
     unavailable = true;
@@ -39,6 +42,15 @@ export async function updateSession(request: NextRequest) {
     destination.search = "";
     destination.searchParams.set("next", safeNextPath(request.nextUrl.pathname + request.nextUrl.search));
     if (unavailable) destination.searchParams.set("status", "unavailable");
+    const redirected = NextResponse.redirect(destination);
+    response.cookies.getAll().forEach((cookie) => redirected.cookies.set(cookie));
+    response = redirected;
+  }
+  if (authenticated && setupRequired && isProtectedPath(request.nextUrl.pathname) && request.nextUrl.pathname !== "/onboarding") {
+    const destination = request.nextUrl.clone();
+    destination.pathname = "/onboarding";
+    destination.search = "";
+    destination.searchParams.set("next", setupDestination(request.nextUrl.pathname + request.nextUrl.search));
     const redirected = NextResponse.redirect(destination);
     response.cookies.getAll().forEach((cookie) => redirected.cookies.set(cookie));
     response = redirected;

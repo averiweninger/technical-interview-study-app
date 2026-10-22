@@ -5,13 +5,18 @@ import { Check, Monitor, SlidersHorizontal } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { careerPaths } from "@/data/mock/curriculum";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { PathSelectionFields } from "@/features/curriculum/path-selection-fields";
+import { onboardingSchema, setupDestination } from "./onboarding";
 import { useDemoPreferences, type DemoPreferences } from "./demo-preferences";
 import { AccountManagement, DeleteAccountUnavailable } from "./account-management";
-import { saveStudyPreferences } from "./preference-actions";
+import { completeOnboarding, saveStudyPreferences } from "./preference-actions";
 import { preferencesUpdateSchema, type PreferencesResult } from "./study-preferences";
 
-export function SettingsForm({ timezones }: { timezones: string[] }) {
+export function SettingsForm({ timezones, onboardingNext }: { timezones: string[]; onboardingNext?: string }) {
+  const router = useRouter();
+  const onboarding = onboardingNext !== undefined;
   const { preferences, themePending } = useDemoPreferences();
   const [draft, setDraft] = useState<DemoPreferences>(preferences);
   const [baseline, setBaseline] = useState(preferences);
@@ -22,7 +27,7 @@ export function SettingsForm({ timezones }: { timezones: string[] }) {
     setBaseline(preferences);
     const next = { ...draft };
     for (const key of Object.keys(draft) as (keyof DemoPreferences)[]) {
-      if (draft[key] === baseline[key]) Object.assign(next, { [key]: preferences[key] });
+      if (JSON.stringify(draft[key]) === JSON.stringify(baseline[key])) Object.assign(next, { [key]: preferences[key] });
     }
     setDraft(next);
   }
@@ -37,13 +42,14 @@ export function SettingsForm({ timezones }: { timezones: string[] }) {
   function savePreferences(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy.current || themePending) return;
-    const { careerPathId, ...studyDraft } = draft;
-    const parsed = preferencesUpdateSchema.safeParse({ ...studyDraft, ...(careerPathId === preferences.careerPathId ? {} : { careerPathId }) });
+    const parsed = (onboarding ? onboardingSchema : preferencesUpdateSchema).safeParse(draft);
     if (!parsed.success) { setMessage({ status: "error", message: parsed.error.issues[0].message }); return; }
     busy.current = true;
     startTransition(async () => {
       try {
-        setMessage(await saveStudyPreferences(parsed.data));
+        const result = await (onboarding ? completeOnboarding : saveStudyPreferences)(parsed.data);
+        setMessage(result);
+        if (onboarding && result.status === "success") router.replace(setupDestination(onboardingNext));
       } catch { setMessage({ status: "error", message: "Preferences could not be saved. Please retry." }); }
       finally { busy.current = false; }
     });
@@ -52,9 +58,9 @@ export function SettingsForm({ timezones }: { timezones: string[] }) {
   return <>
     <PageHeading
       eyebrow="Workspace"
-      title="Settings"
-      description="Manage your account, saved career path, and study preferences." />
-    <AccountManagement />
+      title={onboarding ? "Review your preferences" : "Settings"}
+      description={onboarding ? "Step 2 of 2. Review your saved preferences to complete setup. Interview date is optional." : "Manage your account, selected career paths, and study preferences."} />
+    {!onboarding && <AccountManagement />}
     <form onSubmit={savePreferences} aria-busy={pending || themePending} className="max-w-3xl space-y-6">
       <Card className="p-4 sm:p-6">
         <h2 className="section-title flex items-center gap-2"><SlidersHorizontal size={18} className="text-primary" />Study preferences</h2>
@@ -62,12 +68,7 @@ export function SettingsForm({ timezones }: { timezones: string[] }) {
         <fieldset disabled={pending || themePending} className="min-w-0">
         <legend className="sr-only">Study and interview preferences</legend>
         <div className="mt-6 space-y-5">
-          <div>
-            <label htmlFor="preferred-path" className="field-label">Preferred career path</label>
-            <select id="preferred-path" className="field" disabled={pending} value={draft.careerPathId} onChange={(event) => editDraft({ careerPathId: event.target.value })}>
-              {careerPaths.map((path) => <option value={path.id} key={path.id}>{path.name}</option>)}
-            </select>
-          </div>
+          <PathSelectionFields value={draft} onChange={editDraft} />
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="daily-minutes" className="field-label">Daily study goal (minutes)</label>
@@ -133,11 +134,11 @@ export function SettingsForm({ timezones }: { timezones: string[] }) {
         </div>
       </Card>
       <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={pending || themePending}><Check />{pending ? "Saving preferences..." : "Save preferences"}</Button>
+        <Button type="submit" disabled={pending || themePending}><Check />{pending ? "Saving preferences..." : onboarding ? "Complete setup" : "Save preferences"}</Button>
         <p className="text-xs text-muted-foreground" role={message?.status === "error" ? "alert" : "status"}>{pending ? "Saving preferences…" : message?.message || "Changes are drafts until you save."}</p>
         {JSON.stringify(draft) !== JSON.stringify(preferences) && !pending && <p className="w-full text-xs text-muted-foreground">Unsaved changes. The workspace continues to use your saved preferences.</p>}
       </div>
     </form>
-    <DeleteAccountUnavailable />
+    {!onboarding && <><p className="mt-6 text-sm"><Link className="section-link" href="/onboarding">Review setup</Link></p><DeleteAccountUnavailable /></>}
   </>;
 }

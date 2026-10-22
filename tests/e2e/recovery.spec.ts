@@ -21,8 +21,8 @@ async function mailbox(request: import("@playwright/test").APIRequestContext, em
 test("password recovery preserves saved account data and requires a one-use recovery link", async ({ page, request, context }, testInfo) => {
   const email = await signIn(page);
   await page.goto("/career-paths");
-  await page.getByRole("button", { name: "Choose Business Analytics", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Selected path: Business Analytics", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Make primary: Business Analytics", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Primary path: Business Analytics", exact: true })).toBeVisible();
   await page.goto("/lessons/sql-select");
   await page.getByRole("button", { name: "Start lesson", exact: true }).click();
   await page.getByRole("button", { name: "Mark lesson complete", exact: true }).click();
@@ -59,7 +59,7 @@ test("password recovery preserves saved account data and requires a one-use reco
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill("New-synthetic-passphrase-456");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByText("Selected path:", { exact: false })).toContainText("Business Analytics");
+  await expect(page.getByText("Primary path:", { exact: false })).toContainText("Business Analytics");
   await page.goto("/lessons/sql-select");
   await expect(page.getByRole("button", { name: "Lesson complete", exact: true })).toBeDisabled();
   await page.goto("/reset-password");

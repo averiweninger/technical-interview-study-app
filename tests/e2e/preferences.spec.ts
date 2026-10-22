@@ -80,7 +80,7 @@ test("preferences restore per account without changing metadata, path, study his
   await expect(page.getByLabel("Interview date (optional)")).toHaveValue("");
   await page.goto("/dashboard");
   await expect(page.getByText("Interview date:", { exact: false })).toHaveCount(0);
-  await expect(page.getByText("Selected path:", { exact: false })).toContainText("Business Analytics");
+  await expect(page.getByText("Primary path:", { exact: false })).toContainText("Business Analytics");
   await expect(page.getByText("1 / 6", { exact: true })).toBeVisible();
   await expect(page.getByText("Practice score: 100%", { exact: true })).toBeVisible();
   const identity = await request.post("http://127.0.0.1:54329/auth/v1/token?grant_type=password", { data: { email, password: "Synthetic-passphrase-123" } });

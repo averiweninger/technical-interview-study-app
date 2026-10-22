@@ -67,11 +67,11 @@ describe("verified-owner preference action", () => {
   it("edits and clears the interview date with explicit null, and can save a path with settings", async () => {
     mocks.update.mockResolvedValueOnce({ data: { user: { id: "actor", user_metadata: { interview_date: "2027-01-01" } } }, error: null })
       .mockResolvedValueOnce({ data: { user: { id: "actor", user_metadata: {} } }, error: null })
-      .mockResolvedValueOnce({ data: { user: { id: "actor", user_metadata: { ...metadata, career_path_id: "data-science" } } }, error: null });
+      .mockResolvedValueOnce({ data: { user: { id: "actor", user_metadata: { ...metadata, career_path_id: "data-science", selected_career_path_ids: ["data-science"] } } }, error: null });
     expect(await saveStudyPreferences({ interviewDate: "2027-01-01" })).toMatchObject({ status: "success" });
     expect(await saveStudyPreferences({ interviewDate: null })).toMatchObject({ status: "success" });
     expect(mocks.update).toHaveBeenCalledWith({ data: { interview_date: null } });
-    expect(await saveStudyPreferences({ ...settings, careerPathId: "data-science" })).toMatchObject({ status: "success" });
+    expect(await saveStudyPreferences({ ...settings, careerPathId: "data-science", selectedCareerPathIds: ["data-science"] })).toMatchObject({ status: "success" });
     mocks.update.mockResolvedValueOnce({ data: { user: { id: "actor", user_metadata: { interview_date: null } } }, error: null });
     expect(await saveStudyPreferences({ interviewDate: null })).toMatchObject({ status: "success" });
   });

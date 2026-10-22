@@ -4,9 +4,13 @@ Status: proposed full-product roadmap, 2026-10-21. The frontend foundation, desi
 
 ## Delivery strategy and implementation sequence
 
+### Multiple paths and onboarding follow-up
+
+Step 3 / ONB-01 now has a nonempty selected set, one selected primary, shared Career Paths/Settings validation and editing, legacy primary-only compatibility, and resumable `/onboarding` for new signups. Paths and primary save together in Auth metadata. Setup reviews existing preferences and completes only after a validated confirmed server save. Established accounts are not forced to repeat it. Primary-based recommendations and shared progress/history are unchanged. No schema, hosted mutation, or environment edit occurred. See the current developer-guide report for results and remaining hosted checks.
+
 ### Persistent preferences follow-up
 
-Step 3 now saves daily goal, explanation level, theme, validated IANA timezone, and optional calendar interview date in verified-owner Auth metadata. Settings supports editing/clearing, honest save failures, and saved-theme restoration; the dashboard shows a timezone-aware calendar-day countdown without generating a plan. No schema or hosted mutation occurred. Local verification and the remaining hosted checks are recorded at the start of DEVELOPER_GUIDE.md. Multi-path onboarding and secure account deletion remain separate tasks; Step 3 and the Phase 1 release gate are incomplete.
+Step 3 now saves daily goal, explanation level, theme, validated IANA timezone, and optional calendar interview date in verified-owner Auth metadata. Settings supports editing/clearing, honest save failures, and saved-theme restoration; the dashboard shows a timezone-aware calendar-day countdown without generating a plan. No schema or hosted mutation occurred. Local verification and the remaining hosted checks are recorded at the start of DEVELOPER_GUIDE.md. Multi-path onboarding is implemented locally; secure account deletion remains a separate task; Step 3 and the Phase 1 release gate are incomplete.
 
 ### Career-path selection follow-up
 
@@ -14,7 +18,7 @@ Step 3 now saves daily goal, explanation level, theme, validated IANA timezone, 
 
 Validation: 90 unit tests, 81 local browser cases, lint, TypeScript, content checks, and production build passed. Actual hosted preference verification remains a user smoke check; local tests use synthetic accounts only.
 
-Implemented a durable, verified-owner primary path in existing Auth metadata, workspace revalidation, path-specific dashboard recommendations/topics, and saved-path defaults for the library/practice. Preserved shared completion/history and explicit all-topic browsing. No schema or remote migration is required. Daily goal, explanation level, theme, validated timezone, and optional interview date are now implemented locally (see DEVELOPER_GUIDE.md). Multi-path selection and remaining onboarding workflow are still separate work.
+Implemented a durable, verified-owner primary path in existing Auth metadata, workspace revalidation, path-specific dashboard recommendations/topics, and saved-path defaults for the library/practice. Preserved shared completion/history and explicit all-topic browsing. No schema or remote migration is required. Daily goal, explanation level, theme, validated timezone, and optional interview date are now implemented locally (see DEVELOPER_GUIDE.md). The subsequent follow-up above implements multi-path selection and onboarding locally.
 
 ### Step 3D implementation handoff
 

@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { signIn, expectProfile, expectInitials } from "./auth-fixture";
 
 test("anonymous deep links require login and resume at the requested page", async ({ page }) => {
-  for (const path of ["/dashboard", "/career-paths", "/learn/python", "/lessons/sql-joins", "/progress", "/settings"]) {
+  for (const path of ["/dashboard", "/career-paths", "/learn/python", "/lessons/sql-joins", "/progress", "/settings", "/onboarding"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login\?next=/);
     await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
@@ -137,6 +137,9 @@ test("signup saves names, blocks duplicate submits, and respects provider enumer
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   expect(submissions).toBe(1);
   await page.goto(`/auth/callback?token_hash=${encodeURIComponent(`signup:${email}`)}&type=email`);
+  await expect(page.getByRole("heading", { name: "Choose your career paths" })).toBeVisible();
+  await page.getByRole("button", { name: "Save paths and continue", exact: true }).click();
+  await page.getByRole("button", { name: "Complete setup", exact: true }).click();
   await expectProfile(page, "Taylor Morgan");
   await expectInitials(page, "TM");
   await expect(page.getByText("Your email has been confirmed.", { exact: false })).toBeVisible();

@@ -157,6 +157,10 @@ const server = createServer(async (request, response) => {
         }
         passwords.set(user.id, input.password);
       }
+      if (user.email.startsWith("onboarding-retry-") && input.data && typeof input.data === "object" && "onboarding_completed_version" in input.data && !preferenceFailures.has(user.id)) {
+        preferenceFailures.add(user.id);
+        return send(503, { code: "unavailable" });
+      }
       if (user.email === "path-save-failure@example.test" && input.data && typeof input.data === "object" && "career_path_id" in input.data) return send(503, { code: "unavailable" });
       if (input.email === "failure@example.test") return send(500, { code: "unexpected_failure", message: "Synthetic failure" });
       if (input.data && typeof input.data === "object") {
